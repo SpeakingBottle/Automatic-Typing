@@ -1,3 +1,5 @@
+注：本项目由Claude Code + DeepSeek V4-pro 生成
+
 # 项目需求文档
 
 ## 项目概述
