@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import customtkinter as ctk
 
+from ui.i18n import t
 from ui.icons import get_icon
-from ui.theme import ARTICLE_FONT_CANDIDATES, COLORS, get_font
+from ui.theme import ARTICLE_FONT_CANDIDATES, COLORS, UI_FONT_CANDIDATES, get_font
 from ui.tooltip import Tooltip
 
 
 class TextPanel(ctk.CTkFrame):
     """编辑器卡片。"""
-
-    PLACEHOLDER = "在这里输入或粘贴文字…"
 
     def __init__(self, master, on_text_changed: callable | None = None, **kwargs):
         super().__init__(
@@ -25,6 +24,8 @@ class TextPanel(ctk.CTkFrame):
         )
         self._on_text_changed = on_text_changed
         self._placeholder_active = False
+        self._chars = 0
+        self._lines = 0
         self.on_read_clipboard: callable | None = None
         self.on_clear: callable | None = None
 
@@ -46,26 +47,26 @@ class TextPanel(ctk.CTkFrame):
         toolbar = ctk.CTkFrame(self, fg_color="transparent")
         toolbar.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
 
-        self.btn_clipboard = self._icon_button(
+        self.btn_clipboard, self._tooltip_clipboard = self._icon_button(
             toolbar,
             "clipboard",
-            "读取剪贴板",
+            "editor.tooltip.clipboard",
             lambda: self.on_read_clipboard and self.on_read_clipboard(),
         )
         self.btn_clipboard.pack(side="left")
 
-        self.btn_clear = self._icon_button(
+        self.btn_clear, self._tooltip_clear = self._icon_button(
             toolbar,
             "trash-2",
-            "清空",
+            "editor.tooltip.clear",
             lambda: self.on_clear and self.on_clear(),
         )
         self.btn_clear.pack(side="left", padx=(4, 0))
 
         self.stats_label = ctk.CTkLabel(
             toolbar,
-            text="0 字 · 0 行",
-            font=("Microsoft YaHei UI", 12),
+            text=t("editor.stats", chars=0, lines=0),
+            font=get_font(UI_FONT_CANDIDATES, 12),
             text_color=COLORS["text_muted"],
         )
         self.stats_label.pack(side="right", padx=(0, 4))
@@ -75,7 +76,7 @@ class TextPanel(ctk.CTkFrame):
         self.textbox.bind("<<Modified>>", self._on_modified, add="+")
         self._show_placeholder()
 
-    def _icon_button(self, master, icon: str, tooltip: str, command) -> ctk.CTkButton:
+    def _icon_button(self, master, icon: str, tooltip_key: str, command):
         button = ctk.CTkButton(
             master,
             text="",
@@ -87,8 +88,8 @@ class TextPanel(ctk.CTkFrame):
             hover_color=COLORS["surface_alt"],
             command=command,
         )
-        Tooltip(button, tooltip)
-        return button
+        tooltip = Tooltip(button, t(tooltip_key))
+        return button, tooltip
 
     def _show_placeholder(self) -> None:
         if self.get_text():
@@ -96,7 +97,7 @@ class TextPanel(ctk.CTkFrame):
         self._placeholder_active = True
         self.textbox.configure(text_color=COLORS["text_subtle"])
         self.textbox.delete("1.0", "end")
-        self.textbox.insert("1.0", self.PLACEHOLDER)
+        self.textbox.insert("1.0", t("editor.placeholder"))
 
     def _hide_placeholder(self) -> None:
         if not self._placeholder_active:
@@ -155,7 +156,18 @@ class TextPanel(ctk.CTkFrame):
         self.textbox.focus_set()
 
     def set_stats(self, chars: int, lines: int) -> None:
-        self.stats_label.configure(text=f"{chars} 字 · {lines} 行")
+        self._chars = chars
+        self._lines = lines
+        self.stats_label.configure(text=t("editor.stats", chars=chars, lines=lines))
+
+    def refresh_language(self) -> None:
+        """语言切换后刷新占位文字、统计和 tooltip。"""
+        self._tooltip_clipboard.set_text(t("editor.tooltip.clipboard"))
+        self._tooltip_clear.set_text(t("editor.tooltip.clear"))
+        if self._placeholder_active:
+            self.textbox.delete("1.0", "end")
+            self.textbox.insert("1.0", t("editor.placeholder"))
+        self.set_stats(self._chars, self._lines)
 
     def refresh_icons(self) -> None:
         self.btn_clipboard.configure(image=get_icon("clipboard", "theme"))

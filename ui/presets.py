@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ui.i18n import t
+
 
 @dataclass(frozen=True)
 class Preset:
     key: str
-    label: str
     font_candidates: tuple[str, ...]
     font_size: int
     speed_ms: int
@@ -16,10 +17,14 @@ class Preset:
     skip_indent: bool
     randomize: bool
 
+    @property
+    def label(self) -> str:
+        """按当前界面语言返回预设名称。"""
+        return t(f"preset.{self.key}")
+
 
 ARTICLE_PRESET = Preset(
     key="article",
-    label="文章 / 作业",
     font_candidates=("Microsoft YaHei UI", "Microsoft YaHei"),
     font_size=14,
     speed_ms=90,
@@ -30,7 +35,6 @@ ARTICLE_PRESET = Preset(
 
 CODE_PRESET = Preset(
     key="code",
-    label="代码",
     font_candidates=("Cascadia Code", "Cascadia Mono", "Consolas"),
     font_size=13,
     speed_ms=150,

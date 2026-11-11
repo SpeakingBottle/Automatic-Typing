@@ -19,6 +19,7 @@ const ICONS = [
   "moon",
   "chevron-down",
   "chevron-up",
+  "languages",
 ];
 const VARIANTS = {
   light: "#475569",

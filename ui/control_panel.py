@@ -5,30 +5,40 @@ from __future__ import annotations
 import customtkinter as ctk
 
 from ui.formatting import characters_per_minute, speed_band
+from ui.i18n import t
 from ui.icons import get_icon
-from ui.presets import PRESETS, Preset
+from ui.presets import DEFAULT_PRESET, PRESET_BY_KEY, PRESETS, Preset
 from ui.theme import COLORS, UI_FONT_CANDIDATES, get_font
 from ui.tooltip import Tooltip
 
-COUNTDOWN_OPTIONS = ("1 秒", "3 秒", "5 秒", "10 秒")
+COUNTDOWN_SECONDS = (1, 3, 5, 10)
+
+
+def countdown_label(seconds: int) -> str:
+    """返回当前语言下的倒计时选项文字。"""
+    return t("countdown.option", n=seconds)
 
 
 class PresetBar(ctk.CTkFrame):
     def __init__(self, master, on_change: callable, **kwargs):
         super().__init__(master, fg_color="transparent", **kwargs)
         self._on_change = on_change
-        self._labels = {preset.label: preset.key for preset in PRESETS}
+        self._selected_key = DEFAULT_PRESET.key
+        self._labels: dict[str, str] = {}
+        self._enabled = True
+        self._rebuild_labels()
 
-        ctk.CTkLabel(
+        self.scene_label = ctk.CTkLabel(
             self,
-            text="场景",
+            text=t("control.scene"),
             font=get_font(UI_FONT_CANDIDATES, 13),
             text_color=COLORS["text_muted"],
-        ).pack(side="left", padx=(2, 10))
+        )
+        self.scene_label.pack(side="left", padx=(2, 10))
 
         self.segmented = ctk.CTkSegmentedButton(
             self,
-            values=[preset.label for preset in PRESETS],
+            values=self._values(),
             command=self._changed,
             font=get_font(UI_FONT_CANDIDATES, 13),
             height=32,
@@ -41,19 +51,35 @@ class PresetBar(ctk.CTkFrame):
         )
         self.segmented.pack(side="left")
 
+    def _values(self) -> list[str]:
+        return [preset.label for preset in PRESETS]
+
+    def _rebuild_labels(self) -> None:
+        self._labels = {preset.label: preset.key for preset in PRESETS}
+
     def _changed(self, label: str) -> None:
         key = self._labels.get(label)
         if key:
             self._on_change(key)
 
     def set_selected(self, key: str) -> None:
-        for preset in PRESETS:
-            if preset.key == key:
-                self.segmented.set(preset.label)
-                return
+        if key not in PRESET_BY_KEY:
+            return
+        self._selected_key = key
+        self.segmented.set(PRESET_BY_KEY[key].label)
 
     def set_enabled(self, enabled: bool) -> None:
+        self._enabled = bool(enabled)
         self.segmented.configure(state="normal" if enabled else "disabled")
+
+    def refresh_language(self) -> None:
+        """切换语言后重建分段按钮文字并保持当前选择。"""
+        self.scene_label.configure(text=t("control.scene"))
+        values = self._values()
+        self._rebuild_labels()
+        self.segmented.configure(values=values)
+        self.segmented.set(PRESET_BY_KEY[self._selected_key].label)
+        self.set_enabled(self._enabled)
 
 
 class ControlPanel(ctk.CTkFrame):
@@ -77,6 +103,7 @@ class ControlPanel(ctk.CTkFrame):
         self._on_stop = on_stop
         self._on_settings_change = on_settings_change
         self._state = "idle"
+        self._can_start = False
         self._build()
 
     def _build(self) -> None:
@@ -86,12 +113,13 @@ class ControlPanel(ctk.CTkFrame):
         speed_row.grid(row=0, column=0, sticky="ew", padx=14, pady=(12, 0))
         speed_row.grid_columnconfigure(1, weight=1)
 
-        ctk.CTkLabel(
+        self.speed_label = ctk.CTkLabel(
             speed_row,
-            text="节奏",
+            text=t("control.speed"),
             font=get_font(UI_FONT_CANDIDATES, 13),
             text_color=COLORS["text_muted"],
-        ).grid(row=0, column=0, sticky="w", padx=(0, 10))
+        )
+        self.speed_label.grid(row=0, column=0, sticky="w", padx=(0, 10))
 
         self.speed_slider = ctk.CTkSlider(
             speed_row,
@@ -121,16 +149,17 @@ class ControlPanel(ctk.CTkFrame):
         action_row.grid(row=1, column=0, sticky="ew", padx=14, pady=(10, 0))
         action_row.grid_columnconfigure(2, weight=1)
 
-        ctk.CTkLabel(
+        self.countdown_title = ctk.CTkLabel(
             action_row,
-            text="倒计时",
+            text=t("control.countdown"),
             font=get_font(UI_FONT_CANDIDATES, 13),
             text_color=COLORS["text_muted"],
-        ).grid(row=0, column=0, sticky="w", padx=(0, 8))
+        )
+        self.countdown_title.grid(row=0, column=0, sticky="w", padx=(0, 8))
 
         self.countdown_menu = ctk.CTkOptionMenu(
             action_row,
-            values=list(COUNTDOWN_OPTIONS),
+            values=[countdown_label(seconds) for seconds in COUNTDOWN_SECONDS],
             width=88,
             height=32,
             corner_radius=8,
@@ -141,12 +170,12 @@ class ControlPanel(ctk.CTkFrame):
             text_color=COLORS["text"],
             command=self._on_countdown_change,
         )
-        self.countdown_menu.set("3 秒")
+        self._set_countdown(3)
         self.countdown_menu.grid(row=0, column=1, sticky="w")
 
         self.btn_primary = ctk.CTkButton(
             action_row,
-            text="开始打字",
+            text=t("action.start"),
             image=get_icon("play", "on_accent"),
             compound="left",
             width=132,
@@ -156,6 +185,7 @@ class ControlPanel(ctk.CTkFrame):
             fg_color=COLORS["accent"],
             hover_color=COLORS["accent_hover"],
             text_color=COLORS["accent_text"],
+            text_color_disabled=COLORS["text_muted"],
             command=lambda: self._on_primary(),
         )
         self.btn_primary.grid(row=0, column=3, sticky="e", padx=(10, 0))
@@ -175,7 +205,7 @@ class ControlPanel(ctk.CTkFrame):
             command=lambda: self._on_stop(),
         )
         self.btn_stop.grid(row=0, column=4, sticky="e", padx=(8, 0))
-        Tooltip(self.btn_stop, "停止")
+        self._tooltip_stop = Tooltip(self.btn_stop, t("control.stop"))
 
         self.progress = ctk.CTkProgressBar(
             self,
@@ -198,7 +228,7 @@ class ControlPanel(ctk.CTkFrame):
 
         self.btn_advanced = ctk.CTkButton(
             self,
-            text="高级设置",
+            text=t("control.advanced"),
             image=get_icon("chevron-down", "theme"),
             compound="left",
             anchor="w",
@@ -220,7 +250,7 @@ class ControlPanel(ctk.CTkFrame):
         self.skip_var = ctk.BooleanVar(value=False)
         self.skip_switch = ctk.CTkSwitch(
             self.advanced_frame,
-            text="跳过行首缩进（依赖目标编辑器自动缩进）",
+            text=t("control.skip_indent"),
             variable=self.skip_var,
             font=get_font(UI_FONT_CANDIDATES, 12),
             text_color=COLORS["text_muted"],
@@ -232,7 +262,7 @@ class ControlPanel(ctk.CTkFrame):
         self.random_var = ctk.BooleanVar(value=True)
         self.random_switch = ctk.CTkSwitch(
             self.advanced_frame,
-            text="自然节奏（±30% 随机延迟）",
+            text=t("control.randomize"),
             variable=self.random_var,
             font=get_font(UI_FONT_CANDIDATES, 12),
             text_color=COLORS["text_muted"],
@@ -250,10 +280,16 @@ class ControlPanel(ctk.CTkFrame):
         self._advanced_visible = not self._advanced_visible
         if self._advanced_visible:
             self.advanced_frame.grid()
-            self.btn_advanced.configure(text="收起高级设置", image=get_icon("chevron-up", "theme"))
+            self.btn_advanced.configure(
+                text=t("control.advanced_collapse"),
+                image=get_icon("chevron-up", "theme"),
+            )
         else:
             self.advanced_frame.grid_remove()
-            self.btn_advanced.configure(text="高级设置", image=get_icon("chevron-down", "theme"))
+            self.btn_advanced.configure(
+                text=t("control.advanced"),
+                image=get_icon("chevron-down", "theme"),
+            )
 
     def _on_speed_change(self, value: float) -> None:
         self.refresh_speed_label()
@@ -262,7 +298,19 @@ class ControlPanel(ctk.CTkFrame):
     def refresh_speed_label(self) -> None:
         speed = self.speed_ms
         cpm = characters_per_minute(speed)
-        self.speed_value.configure(text=f"{speed_band(speed)} · {speed} ms/字 · 约 {cpm} 字/分")
+        self.speed_value.configure(
+            text=t(
+                "control.speed_value",
+                band=speed_band(speed),
+                speed=speed,
+                cpm=cpm,
+            )
+        )
+
+    def _set_countdown(self, seconds: int) -> None:
+        if seconds not in COUNTDOWN_SECONDS:
+            seconds = 3
+        self.countdown_menu.set(countdown_label(seconds))
 
     def _on_countdown_change(self, _value: str) -> None:
         self._notify_settings()
@@ -277,8 +325,10 @@ class ControlPanel(ctk.CTkFrame):
 
     @property
     def countdown_seconds(self) -> int:
-        text = self.countdown_menu.get()
-        return int(text.split(" ")[0])
+        try:
+            return int(self.countdown_menu.get().split()[0])
+        except (IndexError, ValueError):
+            return 3
 
     @property
     def skip_indent(self) -> bool:
@@ -290,31 +340,58 @@ class ControlPanel(ctk.CTkFrame):
 
     def apply_preset(self, preset: Preset) -> None:
         self.speed_slider.set(preset.speed_ms)
-        self.countdown_menu.set(f"{preset.countdown_seconds} 秒")
+        self._set_countdown(preset.countdown_seconds)
         self.skip_var.set(preset.skip_indent)
         self.random_var.set(preset.randomize)
         self.refresh_speed_label()
         self._notify_settings()
+
+    def _apply_primary_enabled(self, enabled: bool) -> None:
+        if enabled:
+            self.btn_primary.configure(
+                state="normal",
+                fg_color=COLORS["accent"],
+                hover_color=COLORS["accent_hover"],
+                text_color=COLORS["accent_text"],
+            )
+        else:
+            self.btn_primary.configure(
+                state="disabled",
+                fg_color=COLORS["surface_alt"],
+                hover_color=COLORS["surface_alt"],
+                text_color=COLORS["text_muted"],
+            )
+
+    def set_can_start(self, value: bool) -> None:
+        """空文本时禁用主按钮；运行中不受此状态影响。"""
+        value = bool(value)
+        if value == self._can_start:
+            return
+        self._can_start = value
+        if self._state in {"idle", "finished"}:
+            self._apply_primary_enabled(value)
 
     def set_state(self, state: str) -> None:
         self._state = state
         running = state in {"countdown", "typing", "paused"}
 
         if state == "idle":
-            text, icon = "开始打字", "play"
+            text, icon = t("action.start"), "play"
         elif state == "countdown":
-            text, icon = "取消", "x"
+            text, icon = t("action.cancel"), "x"
         elif state == "typing":
-            text, icon = "暂停", "pause"
+            text, icon = t("action.pause"), "pause"
         elif state == "paused":
-            text, icon = "继续", "play"
+            text, icon = t("action.resume"), "play"
         else:
-            text, icon = "再次开始", "play"
+            text, icon = t("action.restart"), "play"
 
         self.btn_primary.configure(
             text=text,
             image=get_icon(icon, "on_accent"),
-            state="normal",
+        )
+        self._apply_primary_enabled(
+            not (state in {"idle", "finished"} and not self._can_start)
         )
         if state in {"typing", "paused"}:
             self.btn_stop.grid()
@@ -329,15 +406,44 @@ class ControlPanel(ctk.CTkFrame):
         self.btn_advanced.configure(state="normal" if enabled else "disabled")
 
     def set_status(self, text: str, tone: str = "muted") -> None:
-        token = {"muted": "text_muted", "error": "danger", "success": "success"}.get(tone, "text_muted")
+        token = {
+            "muted": "text_muted",
+            "error": "danger",
+            "success": "success",
+        }.get(tone, "text_muted")
         self.status_label.configure(text=text, text_color=COLORS[token])
 
     def set_progress(self, current: int, total: int) -> None:
         value = 0.0 if total <= 0 else max(0.0, min(1.0, current / total))
         self.progress.set(value)
 
+    def refresh_language(self) -> None:
+        """切换语言后刷新所有静态文案。"""
+        current_countdown = self.countdown_seconds
+        self.speed_label.configure(text=t("control.speed"))
+        self.countdown_title.configure(text=t("control.countdown"))
+        self.countdown_menu.configure(
+            values=[countdown_label(seconds) for seconds in COUNTDOWN_SECONDS]
+        )
+        self._set_countdown(current_countdown)
+        self.refresh_speed_label()
+        self.btn_advanced.configure(
+            text=t(
+                "control.advanced_collapse"
+                if self._advanced_visible
+                else "control.advanced"
+            )
+        )
+        self.skip_switch.configure(text=t("control.skip_indent"))
+        self.random_switch.configure(text=t("control.randomize"))
+        self._tooltip_stop.set_text(t("control.stop"))
+        self.set_state(self._state)
+
     def refresh_icons(self) -> None:
         self.set_state(self._state)
         self.btn_advanced.configure(
-            image=get_icon("chevron-up" if self._advanced_visible else "chevron-down", "theme")
+            image=get_icon(
+                "chevron-up" if self._advanced_visible else "chevron-down",
+                "theme",
+            )
         )

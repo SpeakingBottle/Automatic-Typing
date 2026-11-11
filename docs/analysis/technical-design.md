@@ -21,11 +21,13 @@
 Automatic-Typing/
 ├── main.py              # 程序入口
 ├── ui/                  # UI 层
-│   ├── app.py           #   主窗口、状态机、主题与置顶
+│   ├── app.py           #   主窗口、状态机、主题、语言与置顶
 │   ├── theme.py         #   颜色 token、字体与外观模式
+│   ├── i18n.py          #   中文 / English 文案与切换
 │   ├── presets.py       #   文章/代码场景预设
 │   ├── icons.py         #   Lucide 图标加载与缓存
 │   ├── tooltip.py       #   图标按钮提示
+│   ├── countdown.py     #   屏幕顶部倒计时浮层
 │   ├── text_panel.py    #   编辑器卡片、工具栏与统计
 │   └── control_panel.py #   场景栏、控制卡片与进度
 ├── engine/              # 业务逻辑层
@@ -47,7 +49,8 @@ Automatic-Typing/
 │   └── templates/       #   可复用模板
 ├── AGENTS.md            # 智能体工作指引
 ├── CLAUDE.md            # 指向 AGENTS.md
-├── README.md            # 项目说明
+├── README.md            # 中文项目说明
+├── README.en.md         # 英文项目说明
 ├── CHANGELOG.md         # 版本变更记录
 ├── LICENSE              # MIT 许可证
 ├── .gitignore           # Git 忽略规则
@@ -69,6 +72,7 @@ Automatic-Typing/
 │  │ panel    │ panel       │  │
 │  └──────────┴─────────────┘  │
 │  theme / presets / icons     │  ← 主题、预设、图标
+│  i18n / countdown            │  ← 文案、顶部倒计时浮层
 ├──────────────────────────────┤
 │       engine/typer.py        │  ← 打字引擎（线程 + 状态）
 │       engine/key_mapping.py  │  ← SendInput 底层封装
@@ -185,13 +189,14 @@ TypingEngine()
 
 | 状态 | 主按钮 | 停止按钮 | 编辑器 | 参数 |
 |---|---|---|---|---|
-| idle | 开始打字 | 隐藏 | 可编辑 | 可用 |
+| idle，空文本 | 开始打字（禁用） | 隐藏 | 可编辑 | 可用 |
+| idle，有文本 | 开始打字 | 隐藏 | 可编辑 | 可用 |
 | countdown | 取消 | 隐藏 | 只读 | 禁用 |
 | typing | 暂停 | 显示 | 只读 | 禁用 |
 | paused | 继续 | 显示 | 只读 | 禁用 |
 | finished | 再次开始 | 隐藏 | 可编辑 | 可用 |
 
-主按钮点击由 `_handle_primary` 统一分发；引擎回调只负责通知，UI 状态由主窗口协调。
+主按钮点击由 `_handle_primary` 统一分发；引擎回调只负责通知，UI 状态由主窗口协调。`_refresh_stats` 根据 `text.strip()` 调用 `ControlPanel.set_can_start()`，空文本或纯空白时禁用主按钮；运行中的暂停/取消按钮不受该状态影响。
 
 ## 主题与图标
 
@@ -202,6 +207,31 @@ TypingEngine()
 - 主题切换更新 `ctk` 外观模式，并刷新图标
 - 图标来源为 Lucide 1.72.0，许可证文件在 `assets/icons/LICENSE`
 - `tools/render_icons.mjs` 使用开发期 `sharp` 生成 PNG，不进入运行时
+
+## 国际化
+
+- `ui/i18n.py` 维护 `zh` / `en` 两套文案，`t(key, **kwargs)` 读取当前语言并格式化
+- 默认语言为中文，语言切换只在当前进程内生效
+- `ui/app.py` 的 `_retranslate_ui()` 负责刷新标题、副标题、tooltip、场景栏、编辑器、控制卡片、倒计时浮层和状态栏
+- 状态栏使用 `_set_status(key, tone, **kwargs)` 保存文案 key 和参数；切换语言时通过 `_refresh_status()` 重新渲染，避免丢失当前状态
+- `ui/formatting.py` 的时长和速度标签、`Preset.label`、倒计时选项都通过 `t()` 输出
+- 新增界面文案时必须同时补充中英文条目，避免回退到 key
+
+## 倒计时浮层
+
+- `ui/countdown.py` 的 `CountdownOverlay` 使用 `CTkToplevel` 创建无边框置顶窗口
+- 窗口设置 `overrideredirect(True)`、`-topmost`、`-noactivate` 和 `-toolwindow`；`-noactivate` 用于避免抢走目标窗口焦点
+- 位置按屏幕宽度水平居中，距屏幕顶部 24px；尺寸取内容请求尺寸
+- `show(remaining)` 更新大号秒数，`hide()` 在进入输入、暂停、完成、停止或取消时调用
+- 浮层复用同一个窗口，不重复创建；关闭主窗口时销毁
+
+## 启动与任务栏图标
+
+- `main.py` 在创建窗口前调用 `SetCurrentProcessExplicitAppUserModelID("SpeakingBottle.AutomaticTyping")`，让 Windows 任务栏使用应用图标
+- `App._apply_window_icon()` 同时调用 `iconbitmap(assets/app.ico)` 和 `iconphoto(True, assets/app.png)`
+- customtkinter 会在 200ms 后尝试设置自己的标题栏图标；项目已提前调用 `iconbitmap`，因此不会被覆盖
+- `start.bat` 优先使用 Python 3.13 目录下的 `pythonw.exe`，找不到时回退到 PATH 中的 `pythonw`，因此启动后不保留命令行窗口
+- PyInstaller 的 `console=False` 保证 exe 启动时也没有控制台窗口
 
 ## 资源与打包
 

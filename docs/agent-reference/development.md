@@ -24,7 +24,7 @@
 C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe main.py
 ```
 
-也可以双击 `start.bat`。脚本会切换到自身所在目录后启动 `main.py`。
+也可以双击 `start.bat`。脚本会切换到自身所在目录后使用 `pythonw.exe` 启动 `main.py`，不会保留命令行窗口；需要查看异常输出时请直接运行 `python main.py`。
 
 ### SendInput 隔离测试
 

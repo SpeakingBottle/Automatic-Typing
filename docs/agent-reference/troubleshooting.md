@@ -69,7 +69,8 @@
   `C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe`
 - 依赖：`pip install -r requirements.txt`
 - 确认在项目根目录执行命令；`start.bat` 会自动 `cd /d "%~dp0"`。
-- 若 `start.bat` 找不到 Python，检查脚本中的解释器路径是否存在。
+- `start.bat` 使用 `pythonw.exe`，不会保留命令行窗口；若双击后无窗口，先改用 `python main.py` 查看异常输出。
+- 若 `start.bat` 找不到 Python，检查脚本中的解释器路径是否存在；脚本会回退到 PATH 中的 `pythonw`。
 
 ## 7. 打包问题
 
@@ -85,6 +86,19 @@
 3. 开发环境检查 `resource_path("assets")` 是否指向项目根目录。
 4. 打包环境检查 `build.spec` 的 `datas=[('assets', 'assets')]` 是否生效。
 5. 图标缺失时按钮应退化为纯文字；如果程序崩溃，检查 `get_icon` 的异常回退是否被绕过。
+
+### 任务栏仍是 Python 默认图标
+
+- `main.py` 必须在创建 `App` 前调用 `SetCurrentProcessExplicitAppUserModelID`。
+- `App._apply_window_icon()` 同时设置 `app.ico` 和 `app.png`；确认两个资源都在 `assets/` 下。
+- customtkinter 会在 200ms 后设置自己的图标；项目通过提前调用 `iconbitmap` 阻止覆盖。
+- 任务栏可能缓存旧图标，必要时重启资源管理器或重新登录 Windows。
+
+### 切换语言后文案没有更新
+
+- 新控件必须实现 `refresh_language()`，并由 `App._retranslate_ui()` 调用。
+- 状态栏使用 `_set_status(key, ...)` 保存 key；直接拼接字符串会导致切换语言后无法恢复。
+- 检查 `ui/i18n.py` 是否同时存在 `zh` 和 `en` 条目。
 
 ### 主题切换后图标颜色不更新
 

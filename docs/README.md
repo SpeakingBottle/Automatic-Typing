@@ -19,6 +19,7 @@
 | [superpowers/plans/](superpowers/plans/) | 设计规格对应的实现计划 | 执行大型改造时 |
 | [templates/agent-template.md](templates/agent-template.md) | Agent 定义模板 | 新建 Agent 时 |
 | [../CHANGELOG.md](../CHANGELOG.md) | 版本变更记录 | 了解版本差异 |
+| [../README.en.md](../README.en.md) | 英文项目说明 | 面向英文读者 |
 | [../AGENTS.md](../AGENTS.md) | 智能体工作指引 | AI 协作、项目总览 |
 
 ## 三层结构

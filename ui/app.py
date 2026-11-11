@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import time
+import tkinter as tk
 
 import customtkinter as ctk
 
 from engine.typer import TypingEngine
 from ui.control_panel import ControlPanel, PresetBar
+from ui.countdown import CountdownOverlay
 from ui.formatting import TextStats, format_duration
+from ui.i18n import t, toggle_language
 from ui.icons import get_icon
 from ui.presets import DEFAULT_PRESET, PRESET_BY_KEY
 from ui.text_panel import TextPanel
@@ -31,21 +34,21 @@ class App(ctk.CTk):
         apply_appearance("light")
         ctk.set_default_color_theme("blue")
 
-        self.title("自动打字")
+        self.title(t("app.title"))
         self.geometry("760x700")
         self.minsize(620, 600)
         self.configure(fg_color=COLORS["bg"])
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
-
-        try:
-            self.iconbitmap(str(resource_path("assets/app.ico")))
-        except Exception:
-            pass
+        self._icon_photo = None
+        self._apply_window_icon()
 
         self._state = STATE_IDLE
         self._started_at = 0.0
         self._preset_key = DEFAULT_PRESET.key
+        self._status_key = "status.enter_text"
+        self._status_kwargs: dict = {}
+        self._status_tone = "muted"
 
         self._engine = TypingEngine()
         self._engine.on_countdown = self._on_countdown
@@ -54,11 +57,28 @@ class App(ctk.CTk):
         self._engine.on_stopped = self._on_stopped
         self._engine.on_status_change = None
 
+        self._countdown_overlay = CountdownOverlay(self)
+
         self._build_ui()
         self._apply_preset(DEFAULT_PRESET.key, announce=False)
         self._set_state(STATE_IDLE)
         self._center_window()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _apply_window_icon(self) -> None:
+        """同时设置窗口图标和任务栏图标。"""
+        try:
+            self.iconbitmap(str(resource_path("assets/app.ico")))
+        except Exception:
+            pass
+        try:
+            self._icon_photo = tk.PhotoImage(
+                master=self,
+                file=str(resource_path("assets/app.png")),
+            )
+            self.iconphoto(True, self._icon_photo)
+        except Exception:
+            self._icon_photo = None
 
     def _build_ui(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
@@ -73,25 +93,35 @@ class App(ctk.CTk):
             width=28,
         ).grid(row=0, column=0, rowspan=2, sticky="w", padx=(2, 10))
 
-        ctk.CTkLabel(
+        self._title_label = ctk.CTkLabel(
             header,
-            text="自动打字",
+            text=t("app.title"),
             font=get_font(UI_FONT_CANDIDATES, 16, "bold"),
             text_color=COLORS["text"],
             anchor="w",
-        ).grid(row=0, column=1, sticky="sw")
-        ctk.CTkLabel(
+        )
+        self._title_label.grid(row=0, column=1, sticky="sw")
+        self._subtitle_label = ctk.CTkLabel(
             header,
-            text="把文字逐字输入任意窗口",
+            text=t("app.subtitle"),
             font=get_font(UI_FONT_CANDIDATES, 12),
             text_color=COLORS["text_muted"],
             anchor="w",
-        ).grid(row=1, column=1, sticky="nw")
+        )
+        self._subtitle_label.grid(row=1, column=1, sticky="nw")
 
-        self.btn_pin = self._header_button(header, "pin-off", "窗口置顶", self._toggle_pin)
-        self.btn_pin.grid(row=0, column=2, rowspan=2, padx=(4, 0))
-        self.btn_theme = self._header_button(header, "moon", "切换主题", self._toggle_theme)
-        self.btn_theme.grid(row=0, column=3, rowspan=2, padx=(4, 0))
+        self.btn_language = self._header_button(
+            header, "languages", t("app.tooltip.language"), self._toggle_language
+        )
+        self.btn_language.grid(row=0, column=2, rowspan=2, padx=(4, 0))
+        self.btn_pin = self._header_button(
+            header, "pin-off", t("app.tooltip.pin"), self._toggle_pin
+        )
+        self.btn_pin.grid(row=0, column=3, rowspan=2, padx=(4, 0))
+        self.btn_theme = self._header_button(
+            header, "moon", t("app.tooltip.theme"), self._toggle_theme
+        )
+        self.btn_theme.grid(row=0, column=4, rowspan=2, padx=(4, 0))
 
         main = ctk.CTkFrame(self, fg_color="transparent")
         main.grid(row=1, column=0, sticky="nsew", padx=16, pady=(8, 16))
@@ -114,7 +144,7 @@ class App(ctk.CTk):
         )
         self._control_panel.grid(row=2, column=0, sticky="ew", pady=(8, 0))
 
-    def _header_button(self, master, icon: str, tooltip: str, command) -> ctk.CTkButton:
+    def _header_button(self, master, icon: str, tooltip_text: str, command) -> ctk.CTkButton:
         button = ctk.CTkButton(
             master,
             text="",
@@ -126,7 +156,7 @@ class App(ctk.CTk):
             hover_color=COLORS["surface_alt"],
             command=command,
         )
-        Tooltip(button, tooltip)
+        button.tooltip = Tooltip(button, tooltip_text)
         return button
 
     def _center_window(self) -> None:
@@ -145,6 +175,20 @@ class App(ctk.CTk):
         self._control_panel.set_state(state)
         self._preset_bar.set_enabled(state not in ACTIVE_STATES)
         self._text_panel.set_read_only(state in ACTIVE_STATES)
+        if state != STATE_COUNTDOWN:
+            self._countdown_overlay.hide()
+
+    def _set_status(self, key: str, tone: str = "muted", **kwargs) -> None:
+        self._status_key = key
+        self._status_kwargs = kwargs
+        self._status_tone = tone
+        self._control_panel.set_status(t(key, **kwargs), tone)
+
+    def _refresh_status(self) -> None:
+        self._control_panel.set_status(
+            t(self._status_key, **self._status_kwargs),
+            self._status_tone,
+        )
 
     def _on_preset_change(self, key: str) -> None:
         if self._state in ACTIVE_STATES:
@@ -159,7 +203,7 @@ class App(ctk.CTk):
         self._control_panel.apply_preset(preset)
         self._refresh_stats()
         if announce and self._state in {STATE_IDLE, STATE_FINISHED}:
-            self._control_panel.set_status(f"已切换为「{preset.label}」预设")
+            self._set_status("status.preset", label=preset.label)
 
     def _refresh_stats(self) -> None:
         text = self._text_panel.get_text()
@@ -169,13 +213,18 @@ class App(ctk.CTk):
             self._control_panel.countdown_seconds,
         )
         self._text_panel.set_stats(stats.chars, stats.lines)
+        has_text = bool(text.strip())
+        self._control_panel.set_can_start(has_text)
         if self._state == STATE_IDLE:
-            if text.strip():
-                self._control_panel.set_status(
-                    f"就绪 · 预计用时 {format_duration(stats.estimated_seconds)}"
+            if has_text:
+                self._set_status(
+                    "status.ready",
+                    duration=format_duration(stats.estimated_seconds),
                 )
             else:
-                self._control_panel.set_status("请输入要输入的文字")
+                self._set_status("status.enter_text")
+        elif self._state == STATE_FINISHED and not has_text:
+            self._set_status("status.enter_text")
 
     def _handle_primary(self) -> None:
         if self._state in {STATE_IDLE, STATE_FINISHED}:
@@ -185,23 +234,23 @@ class App(ctk.CTk):
         elif self._state == STATE_TYPING:
             self._engine.pause()
             self._set_state(STATE_PAUSED)
-            self._control_panel.set_status("已暂停")
+            self._set_status("status.paused")
         elif self._state == STATE_PAUSED:
             self._engine.resume()
             self._set_state(STATE_TYPING)
-            self._control_panel.set_status("正在输入…")
+            self._set_status("status.typing")
 
     def _start_typing(self) -> None:
         text = self._text_panel.get_text()
         if not text.strip():
-            self._control_panel.set_status("请先输入要输入的文字", "error")
+            self._set_status("status.need_text", "error")
             self._text_panel.focus_editor()
             return
 
         self._started_at = time.monotonic()
         self._set_state(STATE_COUNTDOWN)
         self._control_panel.set_progress(0, len(text))
-        self._control_panel.set_status("准备中…", "muted")
+        self._set_status("status.preparing")
         self._engine.start(
             text=text,
             base_delay_ms=self._control_panel.speed_ms,
@@ -217,7 +266,8 @@ class App(ctk.CTk):
         def update() -> None:
             if self._state != STATE_COUNTDOWN:
                 return
-            self._control_panel.set_status(f"{remaining} 秒后开始，请切换到目标窗口")
+            self._set_status("status.countdown", n=remaining)
+            self._countdown_overlay.show(remaining)
 
         self.after(0, update)
 
@@ -229,8 +279,11 @@ class App(ctk.CTk):
                 self._set_state(STATE_TYPING)
             self._control_panel.set_progress(current, total)
             remaining = max(0, total - current) * self._control_panel.speed_ms / 1000
-            self._control_panel.set_status(
-                f"正在输入 {current}/{total} · 剩余约 {format_duration(round(remaining))}"
+            self._set_status(
+                "status.progress",
+                current=current,
+                total=total,
+                remaining=format_duration(round(remaining)),
             )
 
         self.after(0, update)
@@ -242,9 +295,7 @@ class App(ctk.CTk):
             elapsed = max(0, round(time.monotonic() - self._started_at))
             self._set_state(STATE_FINISHED)
             self._control_panel.set_progress(1, 1)
-            self._control_panel.set_status(
-                f"完成 · 用时 {format_duration(elapsed)}", "success"
-            )
+            self._set_status("status.finished", "success", duration=format_duration(elapsed))
 
         self.after(0, update)
 
@@ -255,7 +306,7 @@ class App(ctk.CTk):
             self._set_state(STATE_IDLE)
             self._control_panel.set_progress(0, 1)
             self._refresh_stats()
-            self._control_panel.set_status("已停止")
+            self._set_status("status.stopped")
 
         self.after(0, update)
 
@@ -263,18 +314,18 @@ class App(ctk.CTk):
         try:
             text = read_clipboard()
         except Exception:
-            self._control_panel.set_status("读取剪贴板失败", "error")
+            self._set_status("status.clipboard_failed", "error")
             return
         if not text.strip():
-            self._control_panel.set_status("剪贴板中没有文本", "error")
+            self._set_status("status.clipboard_empty", "error")
             return
         self._text_panel.set_text(text)
         self._text_panel.focus_editor()
-        self._control_panel.set_status("已读取剪贴板")
+        self._set_status("status.clipboard_read")
 
     def _clear_text(self) -> None:
         self._text_panel.clear()
-        self._control_panel.set_status("已清空")
+        self._set_status("status.cleared")
 
     def _toggle_theme(self) -> None:
         current = ctk.get_appearance_mode().lower()
@@ -283,6 +334,25 @@ class App(ctk.CTk):
         self.btn_theme.configure(image=get_icon("moon" if new_mode == "light" else "sun", "theme"))
         self._text_panel.refresh_icons()
         self._control_panel.refresh_icons()
+
+    def _toggle_language(self) -> None:
+        toggle_language()
+        self._retranslate_ui()
+
+    def _retranslate_ui(self) -> None:
+        """语言切换后刷新全局文案、占位文字和状态栏。"""
+        self.title(t("app.title"))
+        self._title_label.configure(text=t("app.title"))
+        self._subtitle_label.configure(text=t("app.subtitle"))
+        self.btn_language.tooltip.set_text(t("app.tooltip.language"))
+        self.btn_pin.tooltip.set_text(t("app.tooltip.pin"))
+        self.btn_theme.tooltip.set_text(t("app.tooltip.theme"))
+        self._preset_bar.refresh_language()
+        self._text_panel.refresh_language()
+        self._control_panel.refresh_language()
+        self._countdown_overlay.refresh_language()
+        self._refresh_stats()
+        self._refresh_status()
 
     def _toggle_pin(self) -> None:
         topmost = bool(self.attributes("-topmost"))
@@ -293,4 +363,5 @@ class App(ctk.CTk):
     def _on_close(self) -> None:
         if self._engine.is_running:
             self._engine.stop()
+        self._countdown_overlay.destroy()
         self.destroy()

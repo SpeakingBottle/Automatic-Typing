@@ -43,6 +43,8 @@ pyinstaller build.spec
 - 单文件 exe
 - `console=False`，不显示控制台窗口
 - `Pillow` 用于图标加载，已列入 `requirements.txt`
+- `main.py` 设置 AppUserModelID，窗口同时使用 `app.ico` 和 `app.png`，确保任务栏图标不是 Python 默认图标
+- `start.bat` 使用 `pythonw.exe`，源码启动同样不保留命令行窗口
 
 ## 4. 发布前检查清单
 

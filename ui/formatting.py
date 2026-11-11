@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ui.i18n import t
+
 
 def normalize_text(text: str) -> str:
     """移除 Windows 回车符，保留换行符。"""
@@ -37,25 +39,25 @@ def estimate_seconds(text: str, speed_ms: int, countdown_seconds: int) -> int:
 
 
 def format_duration(seconds: int) -> str:
-    """把秒数格式化为中文时长。"""
+    """把秒数格式化为当前语言的时长。"""
     seconds = max(0, int(seconds))
     if seconds < 60:
-        return f"{seconds} 秒"
+        return t("duration.seconds", n=seconds)
     minutes, remainder = divmod(seconds, 60)
     if remainder == 0:
-        return f"{minutes} 分"
-    return f"{minutes} 分 {remainder} 秒"
+        return t("duration.minutes", n=minutes)
+    return t("duration.minutes_seconds", m=minutes, s=remainder)
 
 
 def speed_band(speed_ms: int) -> str:
-    """把速度映射为人类可读的节奏标签。"""
+    """把速度映射为当前语言的节奏标签。"""
     if speed_ms < 80:
-        return "快速"
+        return t("speed.fast")
     if speed_ms < 150:
-        return "自然"
+        return t("speed.natural")
     if speed_ms < 250:
-        return "稳健"
-    return "慢速"
+        return t("speed.steady")
+    return t("speed.slow")
 
 
 @dataclass(frozen=True)

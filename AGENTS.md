@@ -11,8 +11,11 @@
 - 运行平台：Windows 10 / 11，无需管理员权限
 - 入口：`main.py`；UI 在 `ui/`，打字引擎在 `engine/`，工具函数在 `utils/`
 - 默认场景为文章 / 作业；代码场景保留等宽字体和跳过行首缩进
+- 界面支持中文 / English 切换，文案集中在 `ui/i18n.py`
+- 倒计时浮层在 `ui/countdown.py`，屏幕顶部居中、置顶且不抢焦点
+- 空文本时主按钮禁用；`start.bat` 使用 `pythonw.exe` 启动，不保留命令行窗口
 - 打包：PyInstaller + `build.spec`，输出 `dist/自动打字.exe`
-- 图标：Lucide 1.72.0，资源在 `assets/icons/`，许可证见 `assets/icons/LICENSE`
+- 图标：Lucide 1.72.0，资源在 `assets/icons/`，许可证见 `assets/icons/LICENSE`；应用图标为 `assets/app.ico` / `assets/app.png`
 
 核心输入策略：
 
