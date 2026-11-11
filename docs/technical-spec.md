@@ -31,6 +31,8 @@ Automatic-Typing/
 │   ├── execution-standards.md
 │   └── agent-template.md
 ├── assets/              # 设计资源
+├── README.md            # 项目说明
+├── LICENSE              # MIT 许可证
 ├── .gitignore           # Git 忽略规则
 ├── requirements.txt     # Python 依赖
 ├── build.spec           # PyInstaller 打包配置
