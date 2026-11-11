@@ -27,5 +27,8 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# 图标生成工具依赖
+tools/node_modules/
+
 # 日志
 *.log
