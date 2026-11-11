@@ -55,6 +55,24 @@ class CountdownOverlayTests(unittest.TestCase):
         center = self.overlay._window.winfo_rootx() + self.overlay._window.winfo_width() / 2
         self.assertAlmostEqual(center, screen_width / 2, delta=2)
 
+    def test_content_fills_window_width(self):
+        for mode, show in (
+            ("countdown", lambda: self.overlay.show_countdown(3, 3)),
+            ("control", lambda: self.overlay.show_control(5, 10, 8)),
+        ):
+            with self.subTest(mode=mode):
+                show()
+                self.overlay._window.update()
+                frame = (
+                    self.overlay._countdown_frame
+                    if mode == "countdown"
+                    else self.overlay._control_frame
+                )
+                right_gap = self.overlay._window.winfo_width() - (
+                    frame.winfo_x() + frame.winfo_width()
+                )
+                self.assertLessEqual(right_gap, 40)
+
 
 if __name__ == "__main__":
     unittest.main()

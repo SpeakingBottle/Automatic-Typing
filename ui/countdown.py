@@ -169,6 +169,8 @@ class CountdownOverlay:
             corner_radius=20,
         )
         card.pack(fill="both", expand=True)
+        card.grid_rowconfigure(0, weight=1)
+        card.grid_columnconfigure(0, weight=1)
         card.bind("<Enter>", self._handle_pointer_enter, add="+")
 
         # ---- 倒计时模式 ----
@@ -375,34 +377,48 @@ class CountdownOverlay:
         self._visible = True
 
     def _place(self) -> None:
-        """把浮层放在屏幕顶部水平居中，并按模式设置最小尺寸。"""
+        """把浮层放在屏幕顶部水平居中，并让窗口贴合内容尺寸。"""
         if self._window is None:
             return
         self._window.update_idletasks()
+
+        try:
+            scaling = self._window.winfo_fpixels("1i") / 96.0
+        except Exception:
+            scaling = 1.0
+        if scaling <= 0:
+            scaling = 1.0
+
         if self._mode == "countdown":
-            min_width, min_height = 360, 112
+            min_width, min_height = 320, 96
         else:
-            min_width, min_height = 430, 96
-        width = max(min_width, self._window.winfo_reqwidth())
-        height = max(min_height, self._window.winfo_reqheight())
-        self._window.geometry(f"{width}x{height}")
+            min_width, min_height = 400, 96
+
+        # winfo_req* 是物理像素；CTk 的 geometry 会再乘一次缩放，因此这里用
+        # wm_geometry 直接按物理像素设置，避免窗口比内容宽出一圈留下右侧空白。
+        width = max(round(min_width * scaling), self._window.winfo_reqwidth())
+        height = max(round(min_height * scaling), self._window.winfo_reqheight())
+        self._window.wm_geometry(f"{width}x{height}")
         self._window.update_idletasks()
 
-        # Tk 的 geometry 位置是物理像素，宽度是逻辑像素；居中要用缩放后的实际宽度。
         physical_width = self._window.winfo_width()
         screen_width, _ = get_screen_size()
         if screen_width <= 0:
             screen_width = self._window.winfo_screenwidth()
         x = max(0, (screen_width - physical_width) // 2)
         y = 22
-        self._window.geometry(f"+{x}+{y}")
+        self._window.wm_geometry(f"+{x}+{y}")
         self._window.update_idletasks()
 
         try:
-            scaling = ctk.ScalingTracker.get_window_scaling(self._window)
+            region_scaling = ctk.ScalingTracker.get_window_scaling(self._window)
         except Exception:
-            scaling = 1.0
-        set_rounded_window_region(self._window, max(12, round(20 * scaling)))
+            region_scaling = scaling
+        if region_scaling <= 0:
+            region_scaling = scaling
+        set_rounded_window_region(
+            self._window, max(12, round(20 * region_scaling))
+        )
 
     def _handle_pointer_enter(self, _event=None) -> None:
         if self._on_pointer_enter:

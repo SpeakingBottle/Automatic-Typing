@@ -224,6 +224,8 @@ TypingEngine()
 - `ui/countdown.py` 的 `CountdownOverlay` 使用 `CTkToplevel` 创建无边框、圆角、置顶窗口
 - 窗口设置 `overrideredirect(True)`、`-topmost` 和 `-toolwindow`；距顶部 22px
 - 居中时使用 `GetSystemMetrics` 的物理屏幕宽度和缩放后的 `winfo_width`，避免 Tk 逻辑坐标导致的水平偏移
+- 窗口尺寸按 `winfo_reqwidth()` / `winfo_reqheight()` 的物理像素自适应；使用 `wm_geometry` 直接设置物理尺寸，绕过 CTk `geometry()` 的二次 DPI 缩放，避免窗口比内容宽一圈
+- 卡片使用 `grid_rowconfigure` / `grid_columnconfigure` 让内容帧随窗口拉伸，进度条占满可用宽度
 - 通过 `SetWindowRgn` + `CreateRoundRectRgn` 把原生窗口裁剪为圆角矩形，去掉无边框窗口外层的直角背景
 - 倒计时模式：Canvas 圆环显示剩余秒数，右侧显示“准备开始”和切换目标窗口提示，右上角提供取消按钮
 - 控制模式：倒计时结束后复用同一窗口，显示状态点、正在输入/已暂停、当前/总数、百分比、剩余时间、进度条、暂停/继续和停止按钮
