@@ -10,7 +10,9 @@
 - 技术栈：Python 3.10+（开发与验证环境为 3.13）+ customtkinter + Windows `SendInput` API
 - 运行平台：Windows 10 / 11，无需管理员权限
 - 入口：`main.py`；UI 在 `ui/`，打字引擎在 `engine/`，工具函数在 `utils/`
+- 默认场景为文章 / 作业；代码场景保留等宽字体和跳过行首缩进
 - 打包：PyInstaller + `build.spec`，输出 `dist/自动打字.exe`
+- 图标：Lucide 1.72.0，资源在 `assets/icons/`，许可证见 `assets/icons/LICENSE`
 
 核心输入策略：
 
@@ -55,7 +57,7 @@
 
 1. **需求与设计**：需求变化更新 `docs/analysis/requirements.md`；技术方案更新 `technical-design.md`；界面变化更新 `ui-design.md`。
 2. **实现**：UI 改动只涉及 `ui/`，打字逻辑只涉及 `engine/`，工具函数放在 `utils/`；遵守现有分层和命名规范。
-3. **验证**：至少执行导入检查和受影响的手动测试；键盘底层问题先用 `test_sendinput.py` 隔离。完整矩阵见 [测试指南](docs/agent-reference/testing.md)。
+3. **验证**：至少执行 `python -m unittest discover -s tests -v`、导入检查和受影响的手动测试；键盘底层问题先用 `test_sendinput.py` 隔离。完整矩阵见 [测试指南](docs/agent-reference/testing.md)。
 4. **文档同步**：更新相关文档、`docs/README.md` 索引和 `CHANGELOG.md`；确认没有旧路径残留。
 5. **发布**：按 [发布指南](docs/agent-reference/release.md) 打包、检查、记录版本并归档版本文档。
 
@@ -69,6 +71,9 @@ C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe main.py
 
 # 导入检查
 C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe -c "import main"
+
+# 单元测试
+C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe -m unittest discover -s tests -v
 
 # SendInput 隔离测试
 C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe test_sendinput.py

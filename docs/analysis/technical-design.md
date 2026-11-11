@@ -11,6 +11,8 @@
 | GUI 框架 | customtkinter | >=5.2.0 | MIT |
 | 键盘模拟 | ctypes + Win32 `SendInput` API | Windows 内置 | - |
 | 剪贴板 | pyperclip | >=1.8.2 | MIT |
+| 图标渲染 | Pillow | >=10.0.0 | HPND |
+| 图标资源 | Lucide | 1.72.0 | ISC |
 | 打包 | PyInstaller | >=6.0.0 | GPL |
 
 ## 项目结构
@@ -19,14 +21,24 @@
 Automatic-Typing/
 ├── main.py              # 程序入口
 ├── ui/                  # UI 层
-│   ├── app.py           #   主窗口（组装各面板，连接引擎）
-│   ├── text_panel.py    #   文本输入面板
-│   └── control_panel.py #   控制面板
+│   ├── app.py           #   主窗口、状态机、主题与置顶
+│   ├── theme.py         #   颜色 token、字体与外观模式
+│   ├── presets.py       #   文章/代码场景预设
+│   ├── icons.py         #   Lucide 图标加载与缓存
+│   ├── tooltip.py       #   图标按钮提示
+│   ├── text_panel.py    #   编辑器卡片、工具栏与统计
+│   └── control_panel.py #   场景栏、控制卡片与进度
 ├── engine/              # 业务逻辑层
 │   ├── typer.py         #   核心打字引擎（多线程）
 │   └── key_mapping.py   #   字符到虚拟键码映射 + SendInput 结构体
 ├── utils/               # 工具层
-│   └── clipboard.py     #   剪贴板工具
+│   ├── clipboard.py     #   剪贴板工具
+│   └── resources.py     #   开发/打包资源路径
+├── assets/              # 应用图标与 Lucide PNG
+│   ├── app.ico
+│   └── icons/
+├── tools/               # 图标生成工具（开发期，不参与运行时）
+├── tests/               # unittest 测试
 ├── docs/                # 文档中心
 │   ├── README.md        #   文档索引与维护规则
 │   ├── analysis/        #   需求、技术设计、UI 设计
@@ -48,20 +60,22 @@ Automatic-Typing/
 ## 架构分层
 
 ```
-┌─────────────────────────┐
-│        main.py          │  ← 入口，初始化 App
-├─────────────────────────┤
-│       ui/app.py         │  ← 组装 UI、连接引擎回调
-│  ┌─────────┬──────────┐ │
-│  │ text    │ control  │ │  ← Panel 组件（纯 UI）
-│  │ panel   │ panel    │ │
-│  └─────────┴──────────┘ │
-├─────────────────────────┤
-│    engine/typer.py      │  ← 打字引擎（线程管理 + 状态机）
-│    engine/key_mapping.py│  ← SendInput 底层封装
-├─────────────────────────┤
-│    utils/clipboard.py   │  ← 剪贴板工具
-└─────────────────────────┘
+┌──────────────────────────────┐
+│           main.py            │  ← 入口，初始化 App
+├──────────────────────────────┤
+│          ui/app.py           │  ← 状态机、主题、置顶、引擎回调
+│  ┌──────────┬─────────────┐  │
+│  │ text     │ control     │  │  ← 编辑器 / 控制卡片
+│  │ panel    │ panel       │  │
+│  └──────────┴─────────────┘  │
+│  theme / presets / icons     │  ← 主题、预设、图标
+├──────────────────────────────┤
+│       engine/typer.py        │  ← 打字引擎（线程 + 状态）
+│       engine/key_mapping.py  │  ← SendInput 底层封装
+├──────────────────────────────┤
+│ utils/clipboard.py           │  ← 剪贴板
+│ utils/resources.py           │  ← 资源路径
+└──────────────────────────────┘
 ```
 
 ## 核心 API
@@ -70,24 +84,33 @@ Automatic-Typing/
 
 ```
 TypingEngine()
-    .start(text, base_delay_ms, countdown_seconds, skip_indent)  # 开始打字
-    .pause()                                                      # 暂停
-    .resume()                                                     # 继续
-    .stop()                                                       # 停止
-    .is_running / .is_paused                                      # 状态属性
-    .on_countdown(remaining)                                      # 倒计时回调
-    .on_progress(current, total)                                  # 进度回调
-    .on_finished()                                                # 完成回调
-    .on_status_change(status)                                     # 状态变更回调
+    .start(text, base_delay_ms, countdown_seconds, skip_indent, randomize)  # 开始
+    .pause()                                                               # 暂停
+    .resume()                                                              # 继续
+    .stop()                                                                # 停止
+    .is_running / .is_paused                                               # 状态属性
+    .on_countdown(remaining)                                               # 倒计时
+    .on_progress(current, total)                                           # 进度
+    .on_finished()                                                         # 自然完成
+    .on_stopped()                                                          # 用户停止/取消
+    .on_status_change(status)                                              # 状态变更
 ```
 
 参数说明：
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `text` | `str` | - | 要输入的文本 |
-| `base_delay_ms` | `int` | 150 | 基础字符间隔（毫秒），范围 30-500 |
-| `countdown_seconds` | `int` | 3 | 开始前倒计时（秒），范围 1-10 |
-| `skip_indent` | `bool` | `True` | 是否跳过行首缩进（依赖编辑器自动缩进） |
+| `base_delay_ms` | `int` | 50 | 基础字符间隔（毫秒）；UI 预设为 90/150 |
+| `countdown_seconds` | `int` | 3 | 开始前倒计时秒数；UI 提供 1/3/5/10 秒 |
+| `skip_indent` | `bool` | `True` | 是否跳过行首缩进；UI 按预设显式传入 |
+| `randomize` | `bool` | `True` | 是否叠加 ±30% 随机延迟 |
+
+### 完成与停止
+
+- 文本自然输入完成：触发 `on_finished`，UI 进入 `finished` 状态
+- 用户点击停止或取消倒计时：触发 `on_stopped`，UI 回到 `idle`
+- `_finish(completed: bool)` 使用幂等保护，避免重复回调
+- 停止后不得再显示“完成”或“打字完成”
 
 ## 键盘输入原理
 
@@ -144,9 +167,50 @@ TypingEngine()
 | 跳过缩进空白 | `0.005s/字符` | 模拟跳过空白的时间消耗，防止下一字符过早到达 |
 | Tab press→release | `0.005s` | 确保目标应用捕获 Tab 事件 |
 | Shift 组合键 | `0.002s` press/release 前后 | 确保 Shift 修饰生效 |
-| 字符间随机延迟 | `base_delay ± 30%`，最低 `0.005s` | 模拟真人打字节奏 |
+| 字符间延迟 | 自然节奏开启：`base_delay ± 30%`；关闭：固定 `base_delay`；最低 `0.005s` | 模拟真人或稳定节奏 |
 
 这些时序叠加后，从 Enter 到下一行首个非空白字符的延迟至少为 `0.005 + 0.05 + N×0.005 + random_delay`（N 为跳过的空白字符数），有效防止 `@Override` 与下一行 `public` 粘连的竞态问题。
+
+## UI 状态机
+
+`ui/app.py` 维护五个状态：
+
+- `idle`：就绪
+- `countdown`：倒计时
+- `typing`：输入中
+- `paused`：已暂停
+- `finished`：完成
+
+状态与控件：
+
+| 状态 | 主按钮 | 停止按钮 | 编辑器 | 参数 |
+|---|---|---|---|---|
+| idle | 开始打字 | 隐藏 | 可编辑 | 可用 |
+| countdown | 取消 | 隐藏 | 只读 | 禁用 |
+| typing | 暂停 | 显示 | 只读 | 禁用 |
+| paused | 继续 | 显示 | 只读 | 禁用 |
+| finished | 再次开始 | 隐藏 | 可编辑 | 可用 |
+
+主按钮点击由 `_handle_primary` 统一分发；引擎回调只负责通知，UI 状态由主窗口协调。
+
+## 主题与图标
+
+- `ui/theme.py` 集中定义浅色/深色颜色 token 和字体候选
+- 所有 customtkinter 控件使用 `(light, dark)` 颜色元组
+- `ui/icons.py` 从 `assets/icons/{light,dark,on_accent}` 加载 PNG，返回 `CTkImage`
+- 图标缺失时返回 `None`，按钮退化为纯文字
+- 主题切换更新 `ctk` 外观模式，并刷新图标
+- 图标来源为 Lucide 1.72.0，许可证文件在 `assets/icons/LICENSE`
+- `tools/render_icons.mjs` 使用开发期 `sharp` 生成 PNG，不进入运行时
+
+## 资源与打包
+
+- `utils/resources.py` 统一解析资源路径
+- 开发环境从项目根目录读取
+- PyInstaller 打包后从 `sys._MEIPASS` 读取
+- `build.spec` 的 `datas` 收集 `assets` 目录
+- `build.spec` 的 `icon` 指向 `assets/app.ico`
+- `requirements.txt` 包含 `Pillow`
 
 ## 线程模型
 

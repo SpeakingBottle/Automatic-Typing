@@ -1627,8 +1627,8 @@ class App(ctk.CTk):
         ctk.set_default_color_theme("blue")
 
         self.title("自动打字")
-        self.geometry("760x640")
-        self.minsize(620, 500)
+        self.geometry("760x700")
+        self.minsize(620, 600)
         self.configure(fg_color=COLORS["bg"])
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)

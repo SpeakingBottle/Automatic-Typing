@@ -11,7 +11,7 @@
 | Python | 3.10+（当前开发与验证环境：3.13，路径 `C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe`） |
 | 包管理 | pip |
 | 虚拟环境 | 可选，当前使用全局环境 |
-| 依赖 | `customtkinter>=5.2.0`、`pyperclip>=1.8.2`、`pyinstaller>=6.0.0` |
+| 依赖 | `customtkinter>=5.2.0`、`pyperclip>=1.8.2`、`pyinstaller>=6.0.0`、`Pillow>=10.0.0` |
 
 > MSYS2 的 Python 3.12 可能在 PATH 前面。为避免依赖或解释器不一致，命令中显式使用 Python 3.13 路径。
 

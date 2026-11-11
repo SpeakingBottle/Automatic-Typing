@@ -38,9 +38,11 @@ pyinstaller build.spec
 
 - 入口：`main.py`
 - 隐藏导入：`customtkinter`、`pyperclip`
+- 资源：`datas=[('assets', 'assets')]`
+- 应用图标：`icon=str(ROOT / 'assets' / 'app.ico')`
 - 单文件 exe
 - `console=False`，不显示控制台窗口
-- 可选 `icon`：如需应用图标，在 `build.spec` 中配置
+- `Pillow` 用于图标加载，已列入 `requirements.txt`
 
 ## 4. 发布前检查清单
 

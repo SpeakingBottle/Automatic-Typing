@@ -78,6 +78,33 @@
 - 若打包后缺少资源，检查 `datas` 和 `pathex` 配置。
 - 在无 Python 环境的 Windows 机器上验证最终 exe。
 
+### 图标不显示
+
+1. 确认 `assets/icons/light`、`dark`、`on_accent` 三套 PNG 存在。
+2. 确认文件名与 `ui/icons.py` 中的名称一致，例如 `trash-2.png`。
+3. 开发环境检查 `resource_path("assets")` 是否指向项目根目录。
+4. 打包环境检查 `build.spec` 的 `datas=[('assets', 'assets')]` 是否生效。
+5. 图标缺失时按钮应退化为纯文字；如果程序崩溃，检查 `get_icon` 的异常回退是否被绕过。
+
+### 主题切换后图标颜色不更新
+
+- `ui/app.py` 的主题切换会重新应用标题栏、编辑器工具栏和控制栏图标。
+- 若新增图标按钮，必须同时在主题切换时重新调用 `get_icon(..., "theme")`。
+- 检查 `CTkImage` 是否同时提供 `light_image` 和 `dark_image`。
+
+### 停止后显示“完成”
+
+- `TypingEngine.on_finished` 只应在自然输入完成时触发。
+- 用户停止或取消倒计时应触发 `on_stopped`。
+- 若停止后出现完成提示，检查 `_finish(completed=...)` 的调用位置，以及 UI 是否在 `on_stopped` 后覆盖状态。
+- 运行 `python -m unittest tests.test_typer_state -v` 验证回调契约。
+
+### 打包后提示缺少 Pillow
+
+- 确认 `requirements.txt` 包含 `Pillow>=10.0.0`。
+- 重新执行 `pip install -r requirements.txt` 后再打包。
+- PyInstaller 会通过 `ui/icons.py` 的 PIL 导入自动收集 Pillow；若仍缺失，在 `hiddenimports` 中加入 `PIL`。
+
 ## 8. 隔离调试
 
 ```bash
