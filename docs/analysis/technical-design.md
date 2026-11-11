@@ -222,7 +222,9 @@ TypingEngine()
 ## 倒计时与控制浮层
 
 - `ui/countdown.py` 的 `CountdownOverlay` 使用 `CTkToplevel` 创建无边框、圆角、置顶窗口
-- 窗口设置 `overrideredirect(True)`、`-topmost` 和 `-toolwindow`；位置按屏幕宽度水平居中，距顶部 22px
+- 窗口设置 `overrideredirect(True)`、`-topmost` 和 `-toolwindow`；距顶部 22px
+- 居中时使用 `GetSystemMetrics` 的物理屏幕宽度和缩放后的 `winfo_width`，避免 Tk 逻辑坐标导致的水平偏移
+- 通过 `SetWindowRgn` + `CreateRoundRectRgn` 把原生窗口裁剪为圆角矩形，去掉无边框窗口外层的直角背景
 - 倒计时模式：Canvas 圆环显示剩余秒数，右侧显示“准备开始”和切换目标窗口提示，右上角提供取消按钮
 - 控制模式：倒计时结束后复用同一窗口，显示状态点、正在输入/已暂停、当前/总数、百分比、剩余时间、进度条、暂停/继续和停止按钮
 - `show_countdown(remaining, total)` 和 `show_control(current, total, remaining_seconds, paused)` 负责切换模式

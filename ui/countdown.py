@@ -11,7 +11,7 @@ from ui.i18n import t
 from ui.icons import get_icon
 from ui.theme import COLORS, UI_FONT_CANDIDATES, color, get_font
 from ui.tooltip import Tooltip
-from utils.windows import get_window_handle
+from utils.windows import get_screen_size, get_window_handle, set_rounded_window_region
 
 
 class CountdownOverlay:
@@ -168,7 +168,7 @@ class CountdownOverlay:
             border_color=COLORS["border"],
             corner_radius=20,
         )
-        card.pack(padx=2, pady=2)
+        card.pack(fill="both", expand=True)
         card.bind("<Enter>", self._handle_pointer_enter, add="+")
 
         # ---- 倒计时模式 ----
@@ -385,10 +385,24 @@ class CountdownOverlay:
             min_width, min_height = 430, 96
         width = max(min_width, self._window.winfo_reqwidth())
         height = max(min_height, self._window.winfo_reqheight())
-        screen_width = self._window.winfo_screenwidth()
-        x = max(0, (screen_width - width) // 2)
+        self._window.geometry(f"{width}x{height}")
+        self._window.update_idletasks()
+
+        # Tk 的 geometry 位置是物理像素，宽度是逻辑像素；居中要用缩放后的实际宽度。
+        physical_width = self._window.winfo_width()
+        screen_width, _ = get_screen_size()
+        if screen_width <= 0:
+            screen_width = self._window.winfo_screenwidth()
+        x = max(0, (screen_width - physical_width) // 2)
         y = 22
-        self._window.geometry(f"{width}x{height}+{x}+{y}")
+        self._window.geometry(f"+{x}+{y}")
+        self._window.update_idletasks()
+
+        try:
+            scaling = ctk.ScalingTracker.get_window_scaling(self._window)
+        except Exception:
+            scaling = 1.0
+        set_rounded_window_region(self._window, max(12, round(20 * scaling)))
 
     def _handle_pointer_enter(self, _event=None) -> None:
         if self._on_pointer_enter:

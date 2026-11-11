@@ -4,6 +4,7 @@ import customtkinter as ctk
 
 from ui.countdown import CountdownOverlay
 from ui.i18n import set_language
+from utils.windows import get_screen_size
 
 
 class CountdownOverlayTests(unittest.TestCase):
@@ -44,6 +45,15 @@ class CountdownOverlayTests(unittest.TestCase):
         self.overlay.refresh_language()
         self.assertEqual(self.overlay._status_label.cget("text"), "Typing")
         self.assertIn("5/10", self.overlay._detail_label.cget("text"))
+
+    def test_window_is_horizontally_centered(self):
+        screen_width, _ = get_screen_size()
+        if screen_width <= 0:
+            self.skipTest("screen size unavailable")
+        self.overlay.show_countdown(3, 3)
+        self.overlay._window.update_idletasks()
+        center = self.overlay._window.winfo_rootx() + self.overlay._window.winfo_width() / 2
+        self.assertAlmostEqual(center, screen_width / 2, delta=2)
 
 
 if __name__ == "__main__":
