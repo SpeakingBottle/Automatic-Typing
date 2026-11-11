@@ -33,7 +33,6 @@ Automatic-Typing/
 │   ├── agent-reference/ #   开发、测试、发布、排障
 │   ├── history-version/ #   已发布版本的实现指南与测试报告
 │   └── templates/       #   可复用模板
-├── assets/              # 设计资源
 ├── AGENTS.md            # 智能体工作指引
 ├── CLAUDE.md            # 指向 AGENTS.md
 ├── README.md            # 项目说明
