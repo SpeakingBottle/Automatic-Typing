@@ -19,6 +19,11 @@ from ui.theme import COLORS, UI_FONT_CANDIDATES, apply_appearance, get_font
 from ui.tooltip import Tooltip
 from utils.clipboard import read_clipboard
 from utils.resources import resource_path
+from utils.windows import (
+    get_foreground_window,
+    get_window_handle,
+    set_foreground_window,
+)
 
 STATE_IDLE = "idle"
 STATE_COUNTDOWN = "countdown"
@@ -49,6 +54,11 @@ class App(ctk.CTk):
         self._status_key = "status.enter_text"
         self._status_kwargs: dict = {}
         self._status_tone = "muted"
+        self._self_hwnd = 0
+        self._target_hwnd = 0
+        self._progress_current = 0
+        self._progress_total = 0
+        self._progress_remaining = 0.0
 
         self._engine = TypingEngine()
         self._engine.on_countdown = self._on_countdown
@@ -57,13 +67,21 @@ class App(ctk.CTk):
         self._engine.on_stopped = self._on_stopped
         self._engine.on_status_change = None
 
-        self._countdown_overlay = CountdownOverlay(self)
+        self._countdown_overlay = CountdownOverlay(
+            self,
+            on_cancel=self._handle_stop,
+            on_toggle_pause=self._toggle_pause,
+            on_stop=self._handle_stop,
+            on_pointer_enter=self._remember_target_window,
+        )
 
         self._build_ui()
         self._apply_preset(DEFAULT_PRESET.key, announce=False)
         self._set_state(STATE_IDLE)
         self._center_window()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.after(250, self._track_target_window)
+        self.after(200, self._countdown_overlay.prewarm)
 
     def _apply_window_icon(self) -> None:
         """同时设置窗口图标和任务栏图标。"""
@@ -170,12 +188,78 @@ class App(ctk.CTk):
         self.minsize(620, 600)
         self.geometry(f"{width}x{height}+{x}+{y}")
 
+    def _own_hwnd(self) -> int:
+        if not self._self_hwnd:
+            self._self_hwnd = get_window_handle(self)
+        return self._self_hwnd
+
+    def _remember_target_window(self) -> None:
+        """记录最近一个非本程序的前台窗口，供继续输入时恢复焦点。"""
+        if self._state not in ACTIVE_STATES:
+            return
+        hwnd = get_foreground_window()
+        if not hwnd:
+            return
+        if hwnd in {self._own_hwnd(), self._countdown_overlay.hwnd}:
+            return
+        self._target_hwnd = hwnd
+
+    def _track_target_window(self) -> None:
+        self._remember_target_window()
+        self.after(250, self._track_target_window)
+
+    def _restore_target_focus(self) -> None:
+        if self._target_hwnd:
+            set_foreground_window(self._target_hwnd)
+
+    def _restore_main_window(self) -> None:
+        try:
+            self.deiconify()
+            self.lift()
+        except tk.TclError:
+            pass
+
+    def _minimize_for_typing(self) -> None:
+        if self._state in {STATE_COUNTDOWN, STATE_TYPING, STATE_PAUSED}:
+            try:
+                self.iconify()
+            except tk.TclError:
+                pass
+
+    def _toggle_pause(self) -> None:
+        if self._state == STATE_TYPING:
+            self._engine.pause()
+            self._set_state(STATE_PAUSED)
+            self._set_status("status.paused")
+            self._countdown_overlay.show_control(
+                self._progress_current,
+                self._progress_total,
+                self._progress_remaining,
+                paused=True,
+            )
+        elif self._state == STATE_PAUSED:
+            self._restore_target_focus()
+            self.after(60, self._resume_typing)
+
+    def _resume_typing(self) -> None:
+        if self._state != STATE_PAUSED:
+            return
+        self._engine.resume()
+        self._set_state(STATE_TYPING)
+        self._set_status("status.typing")
+        self._countdown_overlay.show_control(
+            self._progress_current,
+            self._progress_total,
+            self._progress_remaining,
+            paused=False,
+        )
+
     def _set_state(self, state: str) -> None:
         self._state = state
         self._control_panel.set_state(state)
         self._preset_bar.set_enabled(state not in ACTIVE_STATES)
         self._text_panel.set_read_only(state in ACTIVE_STATES)
-        if state != STATE_COUNTDOWN:
+        if state not in {STATE_COUNTDOWN, STATE_TYPING, STATE_PAUSED}:
             self._countdown_overlay.hide()
 
     def _status_text(self) -> str:
@@ -241,14 +325,8 @@ class App(ctk.CTk):
             self._start_typing()
         elif self._state == STATE_COUNTDOWN:
             self._handle_stop()
-        elif self._state == STATE_TYPING:
-            self._engine.pause()
-            self._set_state(STATE_PAUSED)
-            self._set_status("status.paused")
-        elif self._state == STATE_PAUSED:
-            self._engine.resume()
-            self._set_state(STATE_TYPING)
-            self._set_status("status.typing")
+        elif self._state in {STATE_TYPING, STATE_PAUSED}:
+            self._toggle_pause()
 
     def _start_typing(self) -> None:
         text = self._text_panel.get_text()
@@ -258,16 +336,25 @@ class App(ctk.CTk):
             return
 
         self._started_at = time.monotonic()
+        self._target_hwnd = 0
+        self._progress_current = 0
+        self._progress_total = len(text)
+        self._progress_remaining = (
+            len(text) * self._control_panel.speed_ms / 1000
+        )
+        countdown = self._control_panel.countdown_seconds
         self._set_state(STATE_COUNTDOWN)
         self._control_panel.set_progress(0, len(text))
         self._set_status("status.preparing")
+        self._countdown_overlay.show_countdown(countdown, countdown)
         self._engine.start(
             text=text,
             base_delay_ms=self._control_panel.speed_ms,
-            countdown_seconds=self._control_panel.countdown_seconds,
+            countdown_seconds=countdown,
             skip_indent=self._control_panel.skip_indent,
             randomize=self._control_panel.randomize,
         )
+        self.after(60, self._minimize_for_typing)
 
     def _handle_stop(self) -> None:
         self._engine.stop()
@@ -277,7 +364,10 @@ class App(ctk.CTk):
             if self._state != STATE_COUNTDOWN:
                 return
             self._set_status("status.countdown", n=remaining)
-            self._countdown_overlay.show(remaining)
+            self._countdown_overlay.show_countdown(
+                remaining,
+                self._control_panel.countdown_seconds,
+            )
 
         self.after(0, update)
 
@@ -285,15 +375,25 @@ class App(ctk.CTk):
         def update() -> None:
             if self._state not in ACTIVE_STATES:
                 return
+            self._remember_target_window()
             if self._state == STATE_COUNTDOWN:
                 self._set_state(STATE_TYPING)
-            self._control_panel.set_progress(current, total)
+            self._progress_current = current
+            self._progress_total = total
             remaining = max(0, total - current) * self._control_panel.speed_ms / 1000
+            self._progress_remaining = remaining
+            self._control_panel.set_progress(current, total)
             self._set_status(
                 "status.progress",
                 current=current,
                 total=total,
                 remaining_seconds=remaining,
+            )
+            self._countdown_overlay.show_control(
+                current,
+                total,
+                remaining,
+                paused=self._state == STATE_PAUSED,
             )
 
         self.after(0, update)
@@ -306,6 +406,7 @@ class App(ctk.CTk):
             self._set_state(STATE_FINISHED)
             self._control_panel.set_progress(1, 1)
             self._set_status("status.finished", "success", seconds=elapsed)
+            self._restore_main_window()
 
         self.after(0, update)
 
@@ -317,6 +418,7 @@ class App(ctk.CTk):
             self._control_panel.set_progress(0, 1)
             self._refresh_stats()
             self._set_status("status.stopped")
+            self._restore_main_window()
 
         self.after(0, update)
 
@@ -344,6 +446,7 @@ class App(ctk.CTk):
         self.btn_theme.configure(image=get_icon("moon" if new_mode == "light" else "sun", "theme"))
         self._text_panel.refresh_icons()
         self._control_panel.refresh_icons()
+        self._countdown_overlay.refresh_theme()
 
     def _toggle_language(self) -> None:
         toggle_language()

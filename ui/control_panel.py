@@ -104,6 +104,7 @@ class ControlPanel(ctk.CTkFrame):
         self._on_settings_change = on_settings_change
         self._state = "idle"
         self._can_start = False
+        self._primary_icon = "play"
         self._build()
 
     def _build(self) -> None:
@@ -347,9 +348,11 @@ class ControlPanel(ctk.CTkFrame):
         self._notify_settings()
 
     def _apply_primary_enabled(self, enabled: bool) -> None:
+        icon_variant = "on_accent" if enabled else "theme"
         if enabled:
             self.btn_primary.configure(
                 state="normal",
+                image=get_icon(self._primary_icon, icon_variant),
                 fg_color=COLORS["accent"],
                 hover_color=COLORS["accent_hover"],
                 text_color=COLORS["accent_text"],
@@ -357,6 +360,7 @@ class ControlPanel(ctk.CTkFrame):
         else:
             self.btn_primary.configure(
                 state="disabled",
+                image=get_icon(self._primary_icon, icon_variant),
                 fg_color=COLORS["surface_alt"],
                 hover_color=COLORS["surface_alt"],
                 text_color=COLORS["text_muted"],
@@ -384,12 +388,10 @@ class ControlPanel(ctk.CTkFrame):
         elif state == "paused":
             text, icon = t("action.resume"), "play"
         else:
-            text, icon = t("action.restart"), "play"
+            text, icon = t("action.start"), "play"
 
-        self.btn_primary.configure(
-            text=text,
-            image=get_icon(icon, "on_accent"),
-        )
+        self._primary_icon = icon
+        self.btn_primary.configure(text=text)
         self._apply_primary_enabled(
             not (state in {"idle", "finished"} and not self._can_start)
         )

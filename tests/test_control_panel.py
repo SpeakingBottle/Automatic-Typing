@@ -33,6 +33,8 @@ class ControlPanelTests(unittest.TestCase):
         self.assertEqual(panel.btn_primary.cget("text"), "暂停")
         panel.set_state("idle")
         self.assertEqual(panel.btn_primary.cget("text"), "开始打字")
+        panel.set_state("finished")
+        self.assertEqual(panel.btn_primary.cget("text"), "开始打字")
         panel.destroy()
 
     def test_preset_bar_returns_key(self):

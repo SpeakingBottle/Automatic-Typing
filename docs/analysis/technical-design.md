@@ -27,7 +27,7 @@ Automatic-Typing/
 │   ├── presets.py       #   文章/代码场景预设
 │   ├── icons.py         #   Lucide 图标加载与缓存
 │   ├── tooltip.py       #   图标按钮提示
-│   ├── countdown.py     #   屏幕顶部倒计时浮层
+│   ├── countdown.py     #   屏幕顶部倒计时与输入控制浮层
 │   ├── text_panel.py    #   编辑器卡片、工具栏与统计
 │   └── control_panel.py #   场景栏、控制卡片与进度
 ├── engine/              # 业务逻辑层
@@ -35,7 +35,8 @@ Automatic-Typing/
 │   └── key_mapping.py   #   字符到虚拟键码映射 + SendInput 结构体
 ├── utils/               # 工具层
 │   ├── clipboard.py     #   剪贴板工具
-│   └── resources.py     #   开发/打包资源路径
+│   ├── resources.py     #   开发/打包资源路径
+│   └── windows.py       #   前台窗口与原生句柄
 ├── assets/              # 应用图标与 Lucide PNG
 │   ├── app.ico
 │   └── icons/
@@ -72,13 +73,14 @@ Automatic-Typing/
 │  │ panel    │ panel       │  │
 │  └──────────┴─────────────┘  │
 │  theme / presets / icons     │  ← 主题、预设、图标
-│  i18n / countdown            │  ← 文案、顶部倒计时浮层
+│  i18n / countdown            │  ← 文案、倒计时/控制浮层
 ├──────────────────────────────┤
 │       engine/typer.py        │  ← 打字引擎（线程 + 状态）
 │       engine/key_mapping.py  │  ← SendInput 底层封装
 ├──────────────────────────────┤
 │ utils/clipboard.py           │  ← 剪贴板
 │ utils/resources.py           │  ← 资源路径
+│ utils/windows.py             │  ← 前台窗口与原生句柄
 └──────────────────────────────┘
 ```
 
@@ -194,9 +196,9 @@ TypingEngine()
 | countdown | 取消 | 隐藏 | 只读 | 禁用 |
 | typing | 暂停 | 显示 | 只读 | 禁用 |
 | paused | 继续 | 显示 | 只读 | 禁用 |
-| finished | 再次开始 | 隐藏 | 可编辑 | 可用 |
+| finished | 开始打字 | 隐藏 | 可编辑 | 可用 |
 
-主按钮点击由 `_handle_primary` 统一分发；引擎回调只负责通知，UI 状态由主窗口协调。`_refresh_stats` 根据 `text.strip()` 调用 `ControlPanel.set_can_start()`，空文本或纯空白时禁用主按钮；运行中的暂停/取消按钮不受该状态影响。
+主按钮点击由 `_handle_primary` 统一分发；引擎回调只负责通知，UI 状态由主窗口协调。`_refresh_stats` 根据 `text.strip()` 调用 `ControlPanel.set_can_start()`，空文本或纯空白时禁用主按钮；运行中的暂停/取消按钮不受该状态影响。点击开始后主窗口自动最小化，完成或停止后恢复，详见下文“主窗口最小化与恢复”。
 
 ## 主题与图标
 
@@ -217,18 +219,32 @@ TypingEngine()
 - `ui/formatting.py` 的时长和速度标签、`Preset.label`、倒计时选项都通过 `t()` 输出
 - 新增界面文案时必须同时补充中英文条目，避免回退到 key
 
-## 倒计时浮层
+## 倒计时与控制浮层
 
-- `ui/countdown.py` 的 `CountdownOverlay` 使用 `CTkToplevel` 创建无边框置顶窗口
-- 窗口设置 `overrideredirect(True)`、`-topmost`、`-noactivate` 和 `-toolwindow`；`-noactivate` 用于避免抢走目标窗口焦点
-- 位置按屏幕宽度水平居中，距屏幕顶部 24px；尺寸取内容请求尺寸
-- `show(remaining)` 更新大号秒数，`hide()` 在进入输入、暂停、完成、停止或取消时调用
-- 浮层复用同一个窗口，不重复创建；关闭主窗口时销毁
+- `ui/countdown.py` 的 `CountdownOverlay` 使用 `CTkToplevel` 创建无边框、圆角、置顶窗口
+- 窗口设置 `overrideredirect(True)`、`-topmost` 和 `-toolwindow`；位置按屏幕宽度水平居中，距顶部 22px
+- 倒计时模式：Canvas 圆环显示剩余秒数，右侧显示“准备开始”和切换目标窗口提示，右上角提供取消按钮
+- 控制模式：倒计时结束后复用同一窗口，显示状态点、正在输入/已暂停、当前/总数、百分比、剩余时间、进度条、暂停/继续和停止按钮
+- `show_countdown(remaining, total)` 和 `show_control(current, total, remaining_seconds, paused)` 负责切换模式
+- `prewarm()` 在应用启动后提前构建隐藏窗口，避免首次点击开始时卡顿
+- 点击控制条按钮会激活浮层；`App` 每 250ms 记录一次非本程序的前台窗口，鼠标进入浮层时也会刷新记录
+- 点击继续时先通过 `SetForegroundWindow` 把焦点还给目标窗口，再延迟 60ms 恢复引擎，避免字符输入到浮层
+- `hide()` 在完成、停止或取消时调用；浮层复用同一个窗口，关闭主窗口时销毁
+
+## 主窗口最小化与恢复
+
+- `App._start_typing()` 显示倒计时浮层后延迟 60ms 调用 `iconify()`
+- 倒计时、输入中、暂停时浮层保持可见；主窗口最小化不影响 Toplevel
+- 自然完成或用户停止后调用 `deiconify()` 和 `lift()` 恢复主窗口
+- 完成后主按钮文案仍为“开始打字”，不再显示“再次开始”
+- 暂停/继续统一由 `App._toggle_pause()` 处理，主按钮和浮层按钮共用同一套状态机
 
 ## 启动与任务栏图标
 
 - `main.py` 在创建窗口前调用 `SetCurrentProcessExplicitAppUserModelID("SpeakingBottle.AutomaticTyping")`，让 Windows 任务栏使用应用图标
 - `App._apply_window_icon()` 同时调用 `iconbitmap(assets/app.ico)` 和 `iconphoto(True, assets/app.png)`
+- `assets/app.ico` 由 `tools/render_icons.mjs` 生成，包含 16/20/24/32/40/48/64/128/256 九个尺寸，每个尺寸直接由 SVG 渲染，避免缩放模糊
+- 应用图标使用渐变圆角背景和加粗键盘图形，提升任务栏小尺寸可读性
 - customtkinter 会在 200ms 后尝试设置自己的标题栏图标；项目已提前调用 `iconbitmap`，因此不会被覆盖
 - `start.bat` 优先使用 Python 3.13 目录下的 `pythonw.exe`，找不到时回退到 PATH 中的 `pythonw`，因此启动后不保留命令行窗口
 - PyInstaller 的 `console=False` 保证 exe 启动时也没有控制台窗口

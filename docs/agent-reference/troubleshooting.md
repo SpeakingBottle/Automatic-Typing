@@ -87,12 +87,26 @@
 4. 打包环境检查 `build.spec` 的 `datas=[('assets', 'assets')]` 是否生效。
 5. 图标缺失时按钮应退化为纯文字；如果程序崩溃，检查 `get_icon` 的异常回退是否被绕过。
 
-### 任务栏仍是 Python 默认图标
+### 任务栏仍是 Python 默认图标或图标发糊
 
 - `main.py` 必须在创建 `App` 前调用 `SetCurrentProcessExplicitAppUserModelID`。
 - `App._apply_window_icon()` 同时设置 `app.ico` 和 `app.png`；确认两个资源都在 `assets/` 下。
 - customtkinter 会在 200ms 后设置自己的图标；项目通过提前调用 `iconbitmap` 阻止覆盖。
+- `assets/app.ico` 由 `node tools/render_icons.mjs` 生成，包含 16~256px 九个尺寸；不要用单张 PNG 直接缩放生成 ico。
 - 任务栏可能缓存旧图标，必要时重启资源管理器或重新登录 Windows。
+
+### 从浮层点击继续后字符输入到浮层
+
+- `utils/windows.py` 记录最近一个非本程序的前台窗口。
+- 继续输入前必须先调用 `set_foreground_window(target_hwnd)`，再延迟约 60ms 恢复引擎。
+- 若目标窗口已关闭，`SetForegroundWindow` 会失败；此时应回到主窗口并重新选择目标。
+- 浮层按钮会激活浮层本身，不能假设目标窗口一直保持前台。
+
+### 主窗口没有自动最小化
+
+- `App._start_typing()` 在显示浮层后通过 `after(60, ...)` 调用 `iconify()`。
+- 检查浮层是否已成功创建；首次创建较慢时可依赖 `CountdownOverlay.prewarm()` 提前构建。
+- 若用户使用 `python main.py` 且窗口未激活，`iconify()` 仍然有效；如果被其他窗口管理器拦截，检查 Windows 窗口状态。
 
 ### 切换语言后文案没有更新
 

@@ -12,10 +12,12 @@
 - 入口：`main.py`；UI 在 `ui/`，打字引擎在 `engine/`，工具函数在 `utils/`
 - 默认场景为文章 / 作业；代码场景保留等宽字体和跳过行首缩进
 - 界面支持中文 / English 切换，文案集中在 `ui/i18n.py`
-- 倒计时浮层在 `ui/countdown.py`，屏幕顶部居中、置顶且不抢焦点
+- 倒计时浮层在 `ui/countdown.py`，倒计时结束后切换为进度/暂停/停止控制条
+- 点击开始后主窗口自动最小化，完成或停止后恢复；浮层继续按钮会把焦点还给目标窗口
 - 空文本时主按钮禁用；`start.bat` 使用 `pythonw.exe` 启动，不保留命令行窗口
 - 打包：PyInstaller + `build.spec`，输出 `dist/自动打字.exe`
-- 图标：Lucide 1.72.0，资源在 `assets/icons/`，许可证见 `assets/icons/LICENSE`；应用图标为 `assets/app.ico` / `assets/app.png`
+- 图标：Lucide 1.72.0，资源在 `assets/icons/`，许可证见 `assets/icons/LICENSE`；应用图标为 `assets/app.ico` / `assets/app.png`，含 16~256px 多尺寸
+- 前台窗口工具在 `utils/windows.py`；从浮层继续输入前会恢复目标窗口焦点
 
 核心输入策略：
 

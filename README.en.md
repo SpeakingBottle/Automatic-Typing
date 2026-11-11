@@ -12,13 +12,15 @@ A Windows desktop tool that simulates real keyboard input to type text or code i
 - Presets automatically switch font, typing speed, and indentation strategy
 - Character-by-character keyboard simulation for English, numbers, symbols, Chinese, Chinese punctuation, and emoji
 - Adjustable typing speed (30 ms – 500 ms per character) with optional natural rhythm (±30% random delay)
-- 1 / 3 / 5 / 10 second countdown, with a large always-on-top countdown card at the top center of the screen
+- 1 / 3 / 5 / 10 second countdown with a circular always-on-top overlay at the top center
+- When the countdown ends, the overlay becomes a compact control bar with progress, percentage, remaining time, pause/resume, and stop
+- The main window minimizes automatically after starting and restores when typing finishes or stops
 - Live character count, line count, and estimated duration
 - Pause, resume, stop, and clipboard import
 - Light / dark theme and always-on-top window mode
 - Chinese / English interface switching
 - Empty editor automatically disables the **Start typing** button
-- Lucide open-source icons and a custom application/taskbar icon
+- Lucide open-source icons and a crisp multi-size application/taskbar icon
 - `start.bat` launches with `pythonw.exe`, so no console window stays open
 - Standalone `.exe` packaging configuration
 
@@ -56,10 +58,11 @@ The output is `dist/自动打字.exe`.
 1. Start the application. The **Article / Homework** preset is selected by default.
 2. Paste or type text, or click **Read clipboard**.
 3. Switch to the **Code** preset if needed, then adjust speed and countdown.
-4. Click **Start typing**. A countdown card appears at the top center of the screen.
+4. Click **Start typing**. The main window minimizes and a circular countdown overlay appears at the top center of the screen.
 5. Before the countdown ends, switch to the target input field and keep that window in the foreground.
-6. During typing you can pause, resume, or stop. When done, you can start again.
-7. Use the language button (文A) in the top-right corner to switch between Chinese and English.
+6. When the countdown ends, the overlay becomes a control bar for progress, pause/resume, and stop.
+7. When typing finishes, the main window restores and the button still reads **Start typing**.
+8. Use the language button (文A) in the top-right corner to switch between Chinese and English.
 
 ## Notes
 
@@ -76,10 +79,10 @@ Automatic-Typing/
 ├── main.py              # Entry point
 ├── ui/                  # UI layer (theme, presets, i18n, icons, panels)
 │   ├── i18n.py          #   Chinese / English text
-│   ├── countdown.py     #   Top-center countdown overlay
+│   ├── countdown.py     #   Countdown and typing control overlay
 │   └── ...
 ├── engine/              # Typing engine and SendInput wrapper
-├── utils/               # Clipboard and resource path helpers
+├── utils/               # Clipboard, resource path, and foreground window helpers
 ├── assets/              # Application icon and Lucide PNGs
 │   └── icons/
 ├── tools/               # Icon generation tools (development only)
