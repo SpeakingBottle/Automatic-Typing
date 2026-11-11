@@ -14,7 +14,7 @@ a = Analysis(
     [str(ROOT / 'main.py')],
     pathex=[str(ROOT)],
     binaries=[],
-    datas=[],
+    datas=[('assets', 'assets')],
     hiddenimports=['customtkinter', 'pyperclip'],
     hookspath=[],
     hooksconfig={},
@@ -45,5 +45,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,
+    icon=str(ROOT / 'assets' / 'app.ico'),
 )

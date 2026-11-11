@@ -37,6 +37,7 @@ class TextPanel(ctk.CTkFrame):
             border_width=0,
             corner_radius=0,
             wrap="word",
+            height=160,
             font=get_font(ARTICLE_FONT_CANDIDATES, 14),
             text_color=COLORS["text"],
         )
@@ -152,3 +153,7 @@ class TextPanel(ctk.CTkFrame):
 
     def set_stats(self, chars: int, lines: int) -> None:
         self.stats_label.configure(text=f"{chars} 字 · {lines} 行")
+
+    def refresh_icons(self) -> None:
+        self.btn_clipboard.configure(image=get_icon("clipboard", "theme"))
+        self.btn_clear.configure(image=get_icon("trash-2", "theme"))
