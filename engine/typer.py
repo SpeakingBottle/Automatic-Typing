@@ -136,6 +136,7 @@ class TypingEngine:
         self._stopped = False
         self._running = False
         self._finished = False
+        self._run_id = 0
 
         # 回调函数
         self.on_countdown: callable | None = None      # 倒计时回调(remaining_seconds)
@@ -171,9 +172,11 @@ class TypingEngine:
         self._paused = False
         self._stopped = False
         self._finished = False
+        self._run_id += 1
+        run_id = self._run_id
         self._thread = threading.Thread(
             target=self._typing_loop,
-            args=(text, base_delay_ms / 1000.0, countdown_seconds, skip_indent, randomize),
+            args=(text, base_delay_ms / 1000.0, countdown_seconds, skip_indent, randomize, run_id),
             daemon=True,
         )
         self._thread.start()
@@ -196,16 +199,16 @@ class TypingEngine:
             return
         self._stopped = True
         self._paused = False
-        self._finish(completed=False)
+        self._finish(completed=False, run_id=self._run_id)
 
     # ---- 内部逻辑 ----
     def _typing_loop(self, text: str, base_delay: float, countdown: int,
-                     skip_indent: bool, randomize: bool) -> None:
+                     skip_indent: bool, randomize: bool, run_id: int) -> None:
         """打字主循环（运行在子线程中）。"""
         # === 倒计时阶段 ===
         for i in range(countdown, 0, -1):
-            if self._stopped:
-                self._finish(completed=False)
+            if self._stopped or run_id != self._run_id:
+                self._finish(completed=False, run_id=run_id)
                 return
             if self.on_countdown:
                 self.on_countdown(i)
@@ -213,8 +216,8 @@ class TypingEngine:
                 self.on_status_change(f"倒计时 {i} 秒...")
             time.sleep(1)
 
-        if self._stopped:
-            self._finish(completed=False)
+        if self._stopped or run_id != self._run_id:
+            self._finish(completed=False, run_id=run_id)
             return
 
         if self.on_status_change:
@@ -224,15 +227,15 @@ class TypingEngine:
         at_line_start = True  # 文本开头视为行首
         total = len(text)
         for idx, char in enumerate(text):
-            if self._stopped:
-                self._finish(completed=False)
+            if self._stopped or run_id != self._run_id:
+                self._finish(completed=False, run_id=run_id)
                 return
 
             while self._paused and not self._stopped:
                 time.sleep(0.1)
 
-            if self._stopped:
-                self._finish(completed=False)
+            if self._stopped or run_id != self._run_id:
+                self._finish(completed=False, run_id=run_id)
                 return
 
             # ---- 跳过 \r：必须在循环层处理，避免额外延时和干扰 at_line_start ----
@@ -271,10 +274,12 @@ class TypingEngine:
             delay = max(delay, 0.005)
             time.sleep(delay)
 
-        self._finish(completed=True)
+        self._finish(completed=True, run_id=run_id)
 
-    def _finish(self, completed: bool) -> None:
+    def _finish(self, completed: bool, run_id: int | None = None) -> None:
         """结束输入；completed=False 表示用户停止或取消。"""
+        if run_id is not None and run_id != self._run_id:
+            return
         if self._finished:
             return
         self._finished = True

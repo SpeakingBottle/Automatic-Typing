@@ -43,6 +43,17 @@ class TypingEngineStateTests(unittest.TestCase):
 
         self.assertEqual(events, ["stopped"])
 
+    def test_stale_run_finish_is_ignored(self):
+        engine = TypingEngine()
+        events = []
+        engine.on_stopped = lambda: events.append("stopped")
+        engine._run_id = 2
+
+        engine._finish(completed=False, run_id=1)
+
+        self.assertEqual(events, [])
+        self.assertFalse(engine._finished)
+
 
 if __name__ == "__main__":
     unittest.main()

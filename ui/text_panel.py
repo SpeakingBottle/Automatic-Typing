@@ -143,7 +143,10 @@ class TextPanel(ctk.CTkFrame):
         self.set_text("")
 
     def set_read_only(self, value: bool) -> None:
-        self.textbox.configure(state="disabled" if value else "normal")
+        state = "disabled" if value else "normal"
+        self.textbox.configure(state=state)
+        self.btn_clipboard.configure(state=state)
+        self.btn_clear.configure(state=state)
 
     def set_editor_font(self, font: tuple) -> None:
         self.textbox.configure(font=font)

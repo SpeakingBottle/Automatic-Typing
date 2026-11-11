@@ -214,12 +214,17 @@ class App(ctk.CTk):
         self._engine.stop()
 
     def _on_countdown(self, remaining: int) -> None:
-        self.after(0, lambda: self._control_panel.set_status(
-            f"{remaining} 秒后开始，请切换到目标窗口"
-        ))
+        def update() -> None:
+            if self._state != STATE_COUNTDOWN:
+                return
+            self._control_panel.set_status(f"{remaining} 秒后开始，请切换到目标窗口")
+
+        self.after(0, update)
 
     def _on_progress(self, current: int, total: int) -> None:
         def update() -> None:
+            if self._state not in ACTIVE_STATES:
+                return
             if self._state == STATE_COUNTDOWN:
                 self._set_state(STATE_TYPING)
             self._control_panel.set_progress(current, total)
@@ -232,6 +237,8 @@ class App(ctk.CTk):
 
     def _on_finished(self) -> None:
         def update() -> None:
+            if self._state not in ACTIVE_STATES:
+                return
             elapsed = max(0, round(time.monotonic() - self._started_at))
             self._set_state(STATE_FINISHED)
             self._control_panel.set_progress(1, 1)
@@ -243,6 +250,8 @@ class App(ctk.CTk):
 
     def _on_stopped(self) -> None:
         def update() -> None:
+            if self._state not in ACTIVE_STATES:
+                return
             self._set_state(STATE_IDLE)
             self._control_panel.set_progress(0, 1)
             self._refresh_stats()
