@@ -7,8 +7,8 @@ PyInstaller 打包配置。
 import sys
 from pathlib import Path
 
-# 项目根目录
-ROOT = Path(__file__).parent.absolute()
+# 项目根目录；PyInstaller 执行 spec 时提供 SPECPATH
+ROOT = Path(SPECPATH).resolve()
 
 a = Analysis(
     [str(ROOT / 'main.py')],
