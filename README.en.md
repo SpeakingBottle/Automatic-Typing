@@ -8,7 +8,7 @@ A Windows desktop tool that simulates real keyboard input to type text or code i
 
 ## Download
 
-- Download `自动打字.exe` from [GitHub Releases](https://github.com/SpeakingBottle/Automatic-Typing/releases/latest)
+- Download `AutomaticTyping.exe` from [GitHub Releases](https://github.com/SpeakingBottle/Automatic-Typing/releases/latest)
 - Standalone executable; Python is not required. Double-click to run.
 - If Windows SmartScreen appears on first launch, choose "More info → Run anyway".
 
