@@ -213,7 +213,7 @@ TypingEngine()
 - `ui/i18n.py` 维护 `zh` / `en` 两套文案，`t(key, **kwargs)` 读取当前语言并格式化
 - 默认语言为中文，语言切换只在当前进程内生效
 - `ui/app.py` 的 `_retranslate_ui()` 负责刷新标题、副标题、tooltip、场景栏、编辑器、控制卡片、倒计时浮层和状态栏
-- 状态栏使用 `_set_status(key, tone, **kwargs)` 保存文案 key 和参数；切换语言时通过 `_refresh_status()` 重新渲染，避免丢失当前状态
+- 状态栏使用 `_set_status(key, tone, **kwargs)` 保存文案 key 和参数；时长保存原始秒数，在 `_status_text()` 中按当前语言格式化，切换语言时通过 `_refresh_status()` 重新渲染，避免丢失当前状态或混入旧语言文案
 - `ui/formatting.py` 的时长和速度标签、`Preset.label`、倒计时选项都通过 `t()` 输出
 - 新增界面文案时必须同时补充中英文条目，避免回退到 key
 

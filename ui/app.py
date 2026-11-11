@@ -178,17 +178,27 @@ class App(ctk.CTk):
         if state != STATE_COUNTDOWN:
             self._countdown_overlay.hide()
 
+    def _status_text(self) -> str:
+        """按当前语言渲染状态栏，时长等参数在渲染时格式化。"""
+        key = self._status_key
+        kwargs = dict(self._status_kwargs)
+        if key in {"status.ready", "status.finished"} and "seconds" in kwargs:
+            kwargs["duration"] = format_duration(int(kwargs.pop("seconds")))
+        if key == "status.progress" and "remaining_seconds" in kwargs:
+            kwargs["remaining"] = format_duration(round(kwargs.pop("remaining_seconds")))
+        if key == "status.preset" and "preset_key" in kwargs:
+            preset = PRESET_BY_KEY.get(kwargs.pop("preset_key"))
+            kwargs["label"] = preset.label if preset else ""
+        return t(key, **kwargs)
+
     def _set_status(self, key: str, tone: str = "muted", **kwargs) -> None:
         self._status_key = key
         self._status_kwargs = kwargs
         self._status_tone = tone
-        self._control_panel.set_status(t(key, **kwargs), tone)
+        self._control_panel.set_status(self._status_text(), tone)
 
     def _refresh_status(self) -> None:
-        self._control_panel.set_status(
-            t(self._status_key, **self._status_kwargs),
-            self._status_tone,
-        )
+        self._control_panel.set_status(self._status_text(), self._status_tone)
 
     def _on_preset_change(self, key: str) -> None:
         if self._state in ACTIVE_STATES:
@@ -203,7 +213,7 @@ class App(ctk.CTk):
         self._control_panel.apply_preset(preset)
         self._refresh_stats()
         if announce and self._state in {STATE_IDLE, STATE_FINISHED}:
-            self._set_status("status.preset", label=preset.label)
+            self._set_status("status.preset", preset_key=key)
 
     def _refresh_stats(self) -> None:
         text = self._text_panel.get_text()
@@ -217,14 +227,14 @@ class App(ctk.CTk):
         self._control_panel.set_can_start(has_text)
         if self._state == STATE_IDLE:
             if has_text:
-                self._set_status(
-                    "status.ready",
-                    duration=format_duration(stats.estimated_seconds),
-                )
+                self._set_status("status.ready", seconds=stats.estimated_seconds)
             else:
                 self._set_status("status.enter_text")
-        elif self._state == STATE_FINISHED and not has_text:
-            self._set_status("status.enter_text")
+        elif self._state == STATE_FINISHED:
+            if not has_text:
+                self._set_status("status.enter_text")
+            elif self._status_key == "status.enter_text":
+                self._set_status("status.ready", seconds=stats.estimated_seconds)
 
     def _handle_primary(self) -> None:
         if self._state in {STATE_IDLE, STATE_FINISHED}:
@@ -283,7 +293,7 @@ class App(ctk.CTk):
                 "status.progress",
                 current=current,
                 total=total,
-                remaining=format_duration(round(remaining)),
+                remaining_seconds=remaining,
             )
 
         self.after(0, update)
@@ -295,7 +305,7 @@ class App(ctk.CTk):
             elapsed = max(0, round(time.monotonic() - self._started_at))
             self._set_state(STATE_FINISHED)
             self._control_panel.set_progress(1, 1)
-            self._set_status("status.finished", "success", duration=format_duration(elapsed))
+            self._set_status("status.finished", "success", seconds=elapsed)
 
         self.after(0, update)
 
