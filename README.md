@@ -18,7 +18,7 @@
 ## 运行环境
 
 - Windows 10 / 11
-- Python 3.10+（开发环境使用 Python 3.13）
+- Python 3.10+（开发与验证环境为 Python 3.13）
 - 无需管理员权限
 
 ## 快速开始
@@ -32,7 +32,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-也可以双击 `启动自动打字.bat` 启动。
+也可以双击 `start.bat` 启动。
 
 ### 打包为 exe
 
@@ -67,22 +67,39 @@ Automatic-Typing/
 ├── ui/                  # UI 层（customtkinter）
 ├── engine/              # 打字引擎与 SendInput 封装
 ├── utils/               # 剪贴板等工具
-├── docs/                # 需求、技术、设计与执行规范
-├── test_sendinput.py    # SendInput 独立测试脚本
+├── docs/                # 文档中心
+│   ├── README.md        #   文档索引与维护规则
+│   ├── analysis/        #   需求、技术设计、UI 设计
+│   ├── agent-reference/ #   开发、测试、发布、排障
+│   ├── history-version/ #   已发布版本的实现指南与测试报告
+│   └── templates/       #   可复用模板
+├── AGENTS.md            # 智能体工作指引
+├── CLAUDE.md            # 指向 AGENTS.md
+├── CHANGELOG.md         # 版本变更记录
+├── README.md            # 项目说明
+├── LICENSE              # MIT 许可证
+├── requirements.txt     # Python 依赖
 ├── build.spec           # PyInstaller 打包配置
-└── 启动自动打字.bat      # Windows 启动脚本
+├── test_sendinput.py    # SendInput 独立测试脚本
+└── start.bat            # Windows 启动脚本
 ```
 
 ## 开发文档
 
-- [需求文档](docs/requirements.md)
-- [技术规范](docs/technical-spec.md)
-- [设计规范](docs/design-spec.md)
-- [执行规范](docs/execution-standards.md)
+- [文档体系索引](docs/README.md)
+- [项目需求](docs/analysis/requirements.md)
+- [技术设计](docs/analysis/technical-design.md)
+- [UI 设计规范](docs/analysis/ui-design.md)
+- [开发指南](docs/agent-reference/development.md)
+- [测试指南](docs/agent-reference/testing.md)
+- [发布指南](docs/agent-reference/release.md)
+- [故障排查](docs/agent-reference/troubleshooting.md)
+- [版本变更记录](CHANGELOG.md)
+- [智能体工作指引](AGENTS.md)
 
 ## 参与贡献
 
-欢迎提交 Issue 或 Pull Request。提交代码前请先阅读 [执行规范](docs/execution-standards.md)，并确保手动测试覆盖基本输入、中文、Unicode、换行、缩进和控制操作。
+欢迎提交 Issue 或 Pull Request。提交代码前请先阅读 [开发指南](docs/agent-reference/development.md) 和 [测试指南](docs/agent-reference/testing.md)，并确保手动测试覆盖基本输入、中文、Unicode、换行、缩进和控制操作。
 
 ## 免责声明
 

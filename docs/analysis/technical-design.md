@@ -1,4 +1,7 @@
-# 技术规范
+# 技术设计
+
+> 本文是技术架构、模块边界、键盘输入机制和线程模型的唯一权威来源。
+> 需求见 [项目需求](requirements.md)，开发环境与编码规范见 [开发指南](../agent-reference/development.md)。
 
 ## 技术栈
 
@@ -24,19 +27,23 @@ Automatic-Typing/
 │   └── key_mapping.py   #   字符到虚拟键码映射 + SendInput 结构体
 ├── utils/               # 工具层
 │   └── clipboard.py     #   剪贴板工具
-├── docs/                # 开发文档
-│   ├── requirements.md
-│   ├── technical-spec.md
-│   ├── design-spec.md
-│   ├── execution-standards.md
-│   └── agent-template.md
+├── docs/                # 文档中心
+│   ├── README.md        #   文档索引与维护规则
+│   ├── analysis/        #   需求、技术设计、UI 设计
+│   ├── agent-reference/ #   开发、测试、发布、排障
+│   ├── history-version/ #   已发布版本的实现指南与测试报告
+│   └── templates/       #   可复用模板
 ├── assets/              # 设计资源
+├── AGENTS.md            # 智能体工作指引
+├── CLAUDE.md            # 指向 AGENTS.md
 ├── README.md            # 项目说明
+├── CHANGELOG.md         # 版本变更记录
 ├── LICENSE              # MIT 许可证
 ├── .gitignore           # Git 忽略规则
 ├── requirements.txt     # Python 依赖
 ├── build.spec           # PyInstaller 打包配置
-└── 启动自动打字.bat      # 启动脚本
+├── test_sendinput.py    # SendInput 独立测试脚本
+└── start.bat            # Windows 启动脚本
 ```
 
 ## 架构分层
@@ -159,6 +166,4 @@ TypingEngine()
 
 `test_sendinput.py` — 独立于 GUI 的 SendInput 测试脚本，可用于隔离排查键盘输入问题。
 
-- 使用 PyInstaller 打包为单文件 .exe
-- `console=False`（无控制台窗口）
-- 隐藏导入: `customtkinter`, `pyperclip`
+打包、依赖与发布流程见 [发布指南](../agent-reference/release.md)，常见问题的排查路径见 [故障排查](../agent-reference/troubleshooting.md)。
