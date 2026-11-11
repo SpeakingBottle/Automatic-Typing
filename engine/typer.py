@@ -135,11 +135,13 @@ class TypingEngine:
         self._paused = False
         self._stopped = False
         self._running = False
+        self._finished = False
 
         # 回调函数
         self.on_countdown: callable | None = None      # 倒计时回调(remaining_seconds)
         self.on_progress: callable | None = None        # 进度回调(current_index, total_chars)
-        self.on_finished: callable | None = None        # 完成回调
+        self.on_finished: callable | None = None        # 自然完成回调
+        self.on_stopped: callable | None = None         # 用户停止 / 取消回调
         self.on_status_change: callable | None = None   # 状态变化回调(status: str)
 
     # ---- 属性 ----
@@ -153,7 +155,7 @@ class TypingEngine:
 
     # ---- 控制方法 ----
     def start(self, text: str, base_delay_ms: int = 50, countdown_seconds: int = 3,
-              skip_indent: bool = True) -> None:
+              skip_indent: bool = True, randomize: bool = True) -> None:
         """
         开始打字。
         Args:
@@ -161,15 +163,17 @@ class TypingEngine:
             base_delay_ms: 基础字符间隔（毫秒）
             countdown_seconds: 开始前的倒计时秒数
             skip_indent: 是否跳过行首缩进（依赖编辑器自动缩进）
+            randomize: 是否在基础间隔上叠加 ±30% 随机波动
         """
         if self._running:
             return
         self._running = True
         self._paused = False
         self._stopped = False
+        self._finished = False
         self._thread = threading.Thread(
             target=self._typing_loop,
-            args=(text, base_delay_ms / 1000.0, countdown_seconds, skip_indent),
+            args=(text, base_delay_ms / 1000.0, countdown_seconds, skip_indent, randomize),
             daemon=True,
         )
         self._thread.start()
@@ -187,21 +191,21 @@ class TypingEngine:
             self.on_status_change("正在打字...")
 
     def stop(self) -> None:
-        """停止打字。"""
+        """停止打字；与自然完成区分，只触发 on_stopped。"""
+        if not self._running:
+            return
         self._stopped = True
         self._paused = False
-        self._running = False
-        if self.on_status_change:
-            self.on_status_change("已停止")
+        self._finish(completed=False)
 
     # ---- 内部逻辑 ----
     def _typing_loop(self, text: str, base_delay: float, countdown: int,
-                     skip_indent: bool) -> None:
+                     skip_indent: bool, randomize: bool) -> None:
         """打字主循环（运行在子线程中）。"""
         # === 倒计时阶段 ===
         for i in range(countdown, 0, -1):
             if self._stopped:
-                self._finish()
+                self._finish(completed=False)
                 return
             if self.on_countdown:
                 self.on_countdown(i)
@@ -210,7 +214,7 @@ class TypingEngine:
             time.sleep(1)
 
         if self._stopped:
-            self._finish()
+            self._finish(completed=False)
             return
 
         if self.on_status_change:
@@ -221,14 +225,14 @@ class TypingEngine:
         total = len(text)
         for idx, char in enumerate(text):
             if self._stopped:
-                self._finish()
+                self._finish(completed=False)
                 return
 
             while self._paused and not self._stopped:
                 time.sleep(0.1)
 
             if self._stopped:
-                self._finish()
+                self._finish(completed=False)
                 return
 
             # ---- 跳过 \r：必须在循环层处理，避免额外延时和干扰 at_line_start ----
@@ -258,19 +262,27 @@ class TypingEngine:
             if self.on_progress:
                 self.on_progress(idx + 1, total)
 
-            # 随机延迟（±30% 波动，模拟真人）
-            variation = base_delay * 0.3
-            delay = base_delay + random.uniform(-variation, variation)
+            # 随机延迟（±30% 波动，模拟真人）；关闭时使用固定间隔
+            if randomize:
+                variation = base_delay * 0.3
+                delay = base_delay + random.uniform(-variation, variation)
+            else:
+                delay = base_delay
             delay = max(delay, 0.005)
             time.sleep(delay)
 
-        self._finish()
+        self._finish(completed=True)
 
-    def _finish(self) -> None:
-        """打字结束，重置状态。"""
+    def _finish(self, completed: bool) -> None:
+        """结束输入；completed=False 表示用户停止或取消。"""
+        if self._finished:
+            return
+        self._finished = True
         self._running = False
         self._paused = False
-        if self.on_finished:
-            self.on_finished()
-        if self.on_status_change:
-            self.on_status_change("等待开始...")
+        if completed:
+            if self.on_finished:
+                self.on_finished()
+        else:
+            if self.on_stopped:
+                self.on_stopped()
