@@ -15,6 +15,7 @@
 | [agent-reference/troubleshooting.md](agent-reference/troubleshooting.md) | 键盘、中文、换行、环境问题的排查 | 出现异常时 |
 | [history-version/README.md](history-version/README.md) | 已发布版本文档的归档规则 | 版本收尾 |
 | [history-version/templates/](history-version/templates/) | 版本实现指南与测试报告模板 | 开始版本开发时 |
+| [superpowers/specs/](superpowers/specs/) | 大型改造的设计规格 | 开始重大功能前 |
 | [templates/agent-template.md](templates/agent-template.md) | Agent 定义模板 | 新建 Agent 时 |
 | [../CHANGELOG.md](../CHANGELOG.md) | 版本变更记录 | 了解版本差异 |
 | [../AGENTS.md](../AGENTS.md) | 智能体工作指引 | AI 协作、项目总览 |
