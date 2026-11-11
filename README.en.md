@@ -4,8 +4,6 @@
 
 A Windows desktop tool that simulates real keyboard input to type text or code into a target window character by character. It is useful for text boxes that block paste and only accept manual input.
 
-> Built with assistance from Claude Code + DeepSeek V4-pro.
-
 ## Features
 
 - General text input with **Article / Homework** and **Code** presets
