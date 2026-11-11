@@ -6,6 +6,12 @@
 
 ![自动打字主界面](docs/images/app-zh.png)
 
+## 下载
+
+- [GitHub Releases](https://github.com/SpeakingBottle/Automatic-Typing/releases/latest) 下载 `自动打字.exe`
+- 单文件绿色版，无需安装 Python，双击即可运行
+- 首次运行若出现 SmartScreen 提示，点击“更多信息 → 仍要运行”
+
 ## 功能特性
 
 - 通用文字输入：默认文章 / 作业场景，保留代码场景
