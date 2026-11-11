@@ -13,7 +13,7 @@
 ## 项目结构
 
 ```
-automatic_typing/
+Automatic-Typing/
 ├── main.py              # 程序入口
 ├── ui/                  # UI 层
 │   ├── app.py           #   主窗口（组装各面板，连接引擎）
@@ -28,8 +28,10 @@ automatic_typing/
 │   ├── requirements.md
 │   ├── technical-spec.md
 │   ├── design-spec.md
-│   └── execution-standards.md
+│   ├── execution-standards.md
+│   └── agent-template.md
 ├── assets/              # 设计资源
+├── .gitignore           # Git 忽略规则
 ├── requirements.txt     # Python 依赖
 ├── build.spec           # PyInstaller 打包配置
 └── 启动自动打字.bat      # 启动脚本

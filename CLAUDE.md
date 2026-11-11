@@ -28,7 +28,7 @@
 ## 项目结构
 
 ```
-automatic_typing/
+Automatic-Typing/
 ├── main.py              # 入口
 ├── ui/                  # UI 层（customtkinter 组件）
 │   ├── app.py           #   主窗口 App 类
@@ -54,8 +54,7 @@ automatic_typing/
 ### 启动应用
 
 ```bash
-# 开发模式
-cd automatic_typing
+# 开发模式（在项目根目录执行）
 C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe main.py
 
 # 或双击 启动自动打字.bat
@@ -110,7 +109,7 @@ C:\...\Python313\python.exe test_sendinput.py  # 独立测试 SendInput
 ### 打包
 
 ```bash
-cd automatic_typing
+# 在项目根目录执行
 pyinstaller build.spec
 # 输出 exe: dist/自动打字.exe
 ```

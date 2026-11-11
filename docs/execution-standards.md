@@ -14,8 +14,7 @@
 ### 开发模式
 
 ```bash
-# 方式一：使用完整 Python 3.13 路径（避免 MSYS2 冲突）
-cd automatic_typing
+# 方式一：使用完整 Python 3.13 路径（避免 MSYS2 冲突，在项目根目录执行）
 C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe main.py
 
 # 方式二：使用批处理脚本（推荐）
@@ -25,7 +24,7 @@ C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe main.py
 ### SendInput 测试（排查键盘输入问题）
 
 ```bash
-cd automatic_typing
+# 在项目根目录执行
 C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe test_sendinput.py
 # 3 秒内切换到记事本，观察字符是否正常输入
 ```
@@ -34,7 +33,7 @@ C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe test_sendinput.
 
 ```bash
 pip install pyinstaller
-cd automatic_typing
+# 在项目根目录执行
 pyinstaller build.spec
 # 输出: dist/自动打字.exe
 ```
@@ -77,8 +76,7 @@ pyinstaller build.spec
 
 ## 分支与变更
 
-- 当前无 Git 版本控制（`git init` 后遵循以下规则）
-- 主分支: `main`
+- 项目使用 Git 管理，主分支: `main`
 - 功能分支: `feature/<功能名>`
 - 修复分支: `fix/<问题描述>`
 - 提交信息: 使用中文，格式: `<类型>: <描述>`（如 `feat: 添加全局热键支持`）
