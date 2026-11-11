@@ -4,6 +4,8 @@
 
 一款 Windows 桌面工具：通过模拟真实键盘输入，将代码或文本逐字输入到目标窗口，适用于禁止粘贴、只能手动输入的文本框。
 
+![自动打字主界面](docs/images/app-zh.png)
+
 ## 功能特性
 
 - 通用文字输入：默认文章 / 作业场景，保留代码场景
@@ -87,6 +89,7 @@ Automatic-Typing/
 ├── tests/               # unittest 测试
 ├── docs/                # 文档中心
 │   ├── README.md        #   文档索引与维护规则
+│   ├── images/          #   README 截图
 │   ├── analysis/        #   需求、技术设计、UI 设计
 │   ├── agent-reference/ #   开发、测试、发布、排障
 │   ├── history-version/ #   已发布版本的实现指南与测试报告

@@ -29,6 +29,7 @@ docs/
 ├── analysis/          # 需求与设计：语义权威
 ├── agent-reference/   # 开发、测试、发布、排障：操作参考
 ├── history-version/   # 已发布版本：只读归档
+├── images/            # README 中英文截图
 └── templates/         # 可复用模板
 ```
 

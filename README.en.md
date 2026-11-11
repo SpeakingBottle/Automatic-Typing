@@ -4,6 +4,8 @@
 
 A Windows desktop tool that simulates real keyboard input to type text or code into a target window character by character. It is useful for text boxes that block paste and only accept manual input.
 
+![Automatic Typing main window](docs/images/app-en.png)
+
 ## Features
 
 - General text input with **Article / Homework** and **Code** presets
@@ -87,6 +89,7 @@ Automatic-Typing/
 ├── tests/               # unittest suite
 ├── docs/                # Documentation center
 │   ├── README.md        #   Documentation index and rules
+│   ├── images/          #   README screenshots
 │   ├── analysis/        #   Requirements, technical design, UI design
 │   ├── agent-reference/ #   Development, testing, release, troubleshooting
 │   ├── history-version/ #   Archived release documentation
