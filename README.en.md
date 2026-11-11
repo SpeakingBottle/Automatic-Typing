@@ -94,12 +94,9 @@ Automatic-Typing/
 ├── tools/               # Icon generation tools (development only)
 ├── tests/               # unittest suite
 ├── docs/                # Documentation center
-│   ├── README.md        #   Documentation index and rules
 │   ├── images/          #   README screenshots
 │   ├── analysis/        #   Requirements, technical design, UI design
-│   ├── agent-reference/ #   Development, testing, release, troubleshooting
-│   ├── history-version/ #   Archived release documentation
-│   └── templates/       #   Reusable templates
+│   └── agent-reference/ #   Development, testing, release, troubleshooting
 ├── AGENTS.md            # Agent working guide
 ├── CLAUDE.md            # Pointer to AGENTS.md
 ├── CHANGELOG.md         # Version history
@@ -116,7 +113,6 @@ Automatic-Typing/
 
 The documentation is currently written in Chinese:
 
-- [Documentation index](docs/README.md)
 - [Requirements](docs/analysis/requirements.md)
 - [Technical design](docs/analysis/technical-design.md)
 - [UI design](docs/analysis/ui-design.md)

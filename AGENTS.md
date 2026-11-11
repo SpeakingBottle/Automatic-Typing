@@ -33,11 +33,8 @@
 
 | 位置 | 用途 |
 |---|---|
-| `docs/README.md` | 文档索引、权威来源与维护规则 |
 | `docs/analysis/` | 需求、技术设计、UI 设计；业务与技术语义以这里为准 |
 | `docs/agent-reference/` | 开发、测试、发布、排障等按需参考文档 |
-| `docs/history-version/` | 已发布版本的实现指南与测试报告，归档后不再修改 |
-| `docs/templates/` | Agent 定义模板等项目模板 |
 | `AGENTS.md` / `CLAUDE.md` | 智能体工作指引 / 入口指针 |
 | `CHANGELOG.md` | 版本变更记录 |
 
@@ -46,7 +43,6 @@
 - 代码或行为变更时，在同一个提交中更新受影响的文档。
 - `docs/analysis/` 是语义权威；其他文档与它冲突时，以 `docs/analysis/` 为准。
 - 活文档只写当前口径，不叠加“本版新增 / 修改”等演进注释。
-- 版本开发中的文档命名为 `docs/vX.Y.Z-implementation-guide.md` 和 `docs/vX.Y.Z-test-report.md`；发布后移入 `docs/history-version/`。
 - 相对链接必须可点击；修改文件名或目录后，全仓搜索旧路径。
 
 ## ③ 交互协议
@@ -56,6 +52,7 @@
 - 纯文档修正、错别字和失效链接可以直接处理。
 - 批量读取文件时先用 Grep 定位，再按需读取行段，避免整读大文档。
 - 测试结论必须来自实际执行；未运行的测试要明确标注“未验证”。
+- 更改完成并验证后自动提交到当前分支，无需再次询问；提交信息沿用 `type: 说明` 格式。
 - 删除文件、重写 Git 历史、强制推送等不可逆操作，先说明范围并取得确认。
 
 ## ④ 开发工作流
@@ -63,8 +60,8 @@
 1. **需求与设计**：需求变化更新 `docs/analysis/requirements.md`；技术方案更新 `technical-design.md`；界面变化更新 `ui-design.md`。
 2. **实现**：UI 改动只涉及 `ui/`，打字逻辑只涉及 `engine/`，工具函数放在 `utils/`；遵守现有分层和命名规范。
 3. **验证**：至少执行 `python -m unittest discover -s tests -v`、导入检查和受影响的手动测试；键盘底层问题先用 `test_sendinput.py` 隔离。完整矩阵见 [测试指南](docs/agent-reference/testing.md)。
-4. **文档同步**：更新相关文档、`docs/README.md` 索引和 `CHANGELOG.md`；确认没有旧路径残留。
-5. **发布**：按 [发布指南](docs/agent-reference/release.md) 打包、检查、记录版本并归档版本文档。
+4. **文档同步**：更新相关文档和 `CHANGELOG.md`；确认没有旧路径残留。
+5. **发布**：按 [发布指南](docs/agent-reference/release.md) 打包、检查并记录版本。
 
 ## ⑤ 常用命令
 

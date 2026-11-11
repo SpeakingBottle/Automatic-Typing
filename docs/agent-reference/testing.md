@@ -1,7 +1,6 @@
 # 测试指南
 
 > 本文定义本项目的测试分层、手动回归矩阵和发布前检查项。
-> 测试报告使用 [测试报告模板](../history-version/templates/test-report.md)。
 
 ## 1. 测试原则
 
@@ -83,23 +82,16 @@ C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe test_sendinput.
 - [ ] `CHANGELOG.md` 已记录本版本变更
 - [ ] `pyinstaller build.spec` 打包成功
 - [ ] 在无 Python 环境运行 `dist/自动打字.exe` 成功
-- [ ] 本版测试报告已归档到 `docs/history-version/`
 
-## 7. 测试记录与归档
+## 7. 测试记录
 
-开发中的测试报告放在：
+测试报告放在：
 
 ```text
 docs/vX.Y.Z-test-report.md
 ```
 
-发布后移动到：
-
-```text
-docs/history-version/vX.Y.Z-test-report.md
-```
-
-报告内容按 [测试报告模板](../history-version/templates/test-report.md) 填写，至少包含环境、执行项、结果、遗留风险和结论。
+报告内容至少包含环境、执行项、结果、遗留风险和结论。
 
 ## 8. 已知限制
 

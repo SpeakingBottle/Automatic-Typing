@@ -1,6 +1,6 @@
 # 发布与打包指南
 
-> 本文说明依赖管理、PyInstaller 打包、发布检查和版本归档流程。
+> 本文说明依赖管理、PyInstaller 打包和发布检查流程。
 > 测试要求见 [测试指南](testing.md)，版本记录见 [CHANGELOG](../../CHANGELOG.md)。
 
 ## 1. 版本约定
@@ -8,7 +8,7 @@
 - 版本号使用 `X.Y.Z` 语义化版本。
 - 每个公开版本在 `CHANGELOG.md` 中增加一条记录。
 - 发布时创建 Git tag：`vX.Y.Z`。
-- 开发中的版本文档使用 `docs/vX.Y.Z-implementation-guide.md` 和 `docs/vX.Y.Z-test-report.md`；发布后归档到 `docs/history-version/`。
+- 版本文档使用 `docs/vX.Y.Z-implementation-guide.md` 和 `docs/vX.Y.Z-test-report.md`。
 
 ## 2. 依赖管理
 
@@ -59,8 +59,7 @@ pyinstaller build.spec
 - [ ] `pyinstaller build.spec` 打包成功
 - [ ] 在无 Python 环境运行 `dist/自动打字.exe` 成功
 - [ ] `CHANGELOG.md` 已更新
-- [ ] `docs/README.md`、`AGENTS.md`、`README.md` 中的文档链接有效
-- [ ] 版本文档已归档到 `docs/history-version/`
+- [ ] `AGENTS.md`、`README.md` 中的文档链接有效
 
 ## 5. 发布流程
 
@@ -70,8 +69,6 @@ pyinstaller build.spec
 4. 执行完整回归和打包验证。
 5. 提交变更，创建 `vX.Y.Z` tag，推送 `main` 和 tag。
 6. 在 GitHub Release 中填写版本说明，可附上 `dist/自动打字.exe`。
-7. 将本版实现指南和测试报告移入 `docs/history-version/`。
-8. 更新 `docs/history-version/README.md` 的归档索引。
 
 ## 6. 产物与忽略规则
 

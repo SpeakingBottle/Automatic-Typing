@@ -1,7 +1,7 @@
 # 变更日志
 
 > 本项目使用语义化版本 `X.Y.Z`，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
-> 每个公开版本应创建对应的 Git tag，并按 `docs/history-version/README.md` 归档版本文档。
+> 每个公开版本应创建对应的 Git tag。
 
 ## [2.0.0] - 2026-11-11
 

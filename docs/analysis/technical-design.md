@@ -43,11 +43,8 @@ Automatic-Typing/
 ├── tools/               # 图标生成工具（开发期，不参与运行时）
 ├── tests/               # unittest 测试
 ├── docs/                # 文档中心
-│   ├── README.md        #   文档索引与维护规则
 │   ├── analysis/        #   需求、技术设计、UI 设计
-│   ├── agent-reference/ #   开发、测试、发布、排障
-│   ├── history-version/ #   已发布版本的实现指南与测试报告
-│   └── templates/       #   可复用模板
+│   └── agent-reference/ #   开发、测试、发布、排障
 ├── AGENTS.md            # 智能体工作指引
 ├── CLAUDE.md            # 指向 AGENTS.md
 ├── README.md            # 中文项目说明

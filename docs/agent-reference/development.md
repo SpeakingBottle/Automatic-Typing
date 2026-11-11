@@ -96,12 +96,11 @@ C:\Users\Deki\AppData\Local\Programs\Python\Python313\python.exe test_sendinput.
 | 测试范围、回归清单 | `docs/agent-reference/testing.md` |
 | 打包、依赖、发布流程 | `docs/agent-reference/release.md` |
 | 新问题与排查方法 | `docs/agent-reference/troubleshooting.md` |
-| 文档结构或权威来源 | `docs/README.md` |
-| 版本变更 | `CHANGELOG.md` 与版本归档 |
+| 文档结构与权威来源 | `docs/analysis/` |
+| 版本变更 | `CHANGELOG.md` |
 
 ## 相关文档
 
-- [文档体系索引](../README.md)
 - [项目需求](../analysis/requirements.md)
 - [技术设计](../analysis/technical-design.md)
 - [UI 设计规范](../analysis/ui-design.md)

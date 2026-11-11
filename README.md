@@ -94,12 +94,9 @@ Automatic-Typing/
 ├── tools/               # 图标生成工具（开发期）
 ├── tests/               # unittest 测试
 ├── docs/                # 文档中心
-│   ├── README.md        #   文档索引与维护规则
 │   ├── images/          #   README 截图
 │   ├── analysis/        #   需求、技术设计、UI 设计
-│   ├── agent-reference/ #   开发、测试、发布、排障
-│   ├── history-version/ #   已发布版本的实现指南与测试报告
-│   └── templates/       #   可复用模板
+│   └── agent-reference/ #   开发、测试、发布、排障
 ├── AGENTS.md            # 智能体工作指引
 ├── CLAUDE.md            # 指向 AGENTS.md
 ├── CHANGELOG.md         # 版本变更记录
@@ -115,7 +112,6 @@ Automatic-Typing/
 ## 开发文档
 
 - [English README](README.en.md)
-- [文档体系索引](docs/README.md)
 - [项目需求](docs/analysis/requirements.md)
 - [技术设计](docs/analysis/technical-design.md)
 - [UI 设计规范](docs/analysis/ui-design.md)
